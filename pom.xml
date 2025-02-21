@@ -660,6 +660,7 @@
                     <excludes>
                         <exclude>**/DsLicenseApi.class</exclude>
                         <exclude>**/ServiceApi.class</exclude>
+                        <exclude>**/DsRightsApi.class</exclude>
                     </excludes>
                 </configuration>
             </plugin>
