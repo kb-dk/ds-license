@@ -3,22 +3,7 @@ package dk.kb.license.api.v1.impl;
 
 import dk.kb.license.api.v1.DsLicenseApi;
 import dk.kb.license.config.ServiceConfig;
-import dk.kb.license.model.v1.CheckAccessForIdsInputDto;
-import dk.kb.license.model.v1.CheckAccessForIdsOutputDto;
-import dk.kb.license.model.v1.GetUserGroupsAndLicensesInputDto;
-import dk.kb.license.model.v1.GetUserGroupsAndLicensesOutputDto;
-import dk.kb.license.model.v1.GetUserGroupsInputDto;
-import dk.kb.license.model.v1.GetUserGroupsOutputDto;
-import dk.kb.license.model.v1.GetUserQueryInputDto;
-import dk.kb.license.model.v1.GetUserQueryOutputDto;
-import dk.kb.license.model.v1.GetUsersFilterQueryOutputDto;
-import dk.kb.license.model.v1.GetUsersLicensesInputDto;
-import dk.kb.license.model.v1.GetUsersLicensesOutputDto;
-import dk.kb.license.model.v1.HelloReplyDto;
-import dk.kb.license.model.v1.LicenseOverviewDto;
-import dk.kb.license.model.v1.UserGroupDto;
-import dk.kb.license.model.v1.ValidateAccessInputDto;
-import dk.kb.license.model.v1.ValidateAccessOutputDto;
+import dk.kb.license.model.v1.*;
 import dk.kb.license.storage.License;
 import dk.kb.license.storage.PresentationType;
 import dk.kb.license.validation.LicenseValidator;
@@ -32,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * ds-license
