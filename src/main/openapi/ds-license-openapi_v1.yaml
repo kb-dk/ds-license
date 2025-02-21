@@ -167,6 +167,112 @@ paths:
               schema:
                 $ref: '#/components/schemas/GetUserGroupsAndLicensesOutput'
   
+  # Rights
+  /rights/restrictedIds:
+    get:
+      summary: get all restricted ids
+      tags:
+        - 'DsRights'
+      operationId: getAllRestrictedIds
+      parameters:
+        - name: idType
+          in: query
+          description: filter on IdType
+          schema:
+            type: string
+        - name: system
+          in: query
+          description: filter on system
+          schema:
+            type: string
+      responses:
+        '200':
+          description:
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RestrictedIdOutput'
+
+
+
+
+  /rights/restrictedId:
+    get:
+      tags:
+        - 'DsRights'
+      operationId: getRestrictedId
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: idType
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: system
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Get an stricted ID details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestrictedIdOutput'
+        '404':
+          description: restricted id not found
+    delete:
+      tags:
+        - 'DsRights'
+      operationId: deleteRestrictedId
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: idType
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: system
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: deleted
+    post:
+      tags:
+        - 'DsRights'
+      operationId: createRestrictedId
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestrictedIdInput'
+            examples:
+              DrProductionID:
+                value:
+                  id: 'test1'
+                  idType: 'dr_produktions_id'
+                  system: 'dr'
+                  comment: 'Dette er en test'
+
+      responses:
+        '201':
+          description: created
+
+
 
 
 
@@ -464,9 +570,42 @@ components:
         presentationTypes:   
           type: array
           items:
-            type: string 
-            
-                    
+            type: string
+
+# Rights module
+
+    RestrictedIdInput:
+        type: object
+        required:
+          - id
+          - idType
+          - system
+        properties:
+          id:
+            type: string
+          idType:
+            type: string
+          system:
+            type: string
+          comment:
+            type: string
+
+    RestrictedIdOutput:
+        type: object
+        properties:
+          id:
+            type: string
+          idType:
+            type: string
+          system:
+            type: string
+          comment:
+            type: string
+          modifiedBy:
+            type: string
+          modifiedTime:
+            type: long
+
     HelloReply:
       type: object
       required:
