@@ -80,7 +80,7 @@ public class DsRightsApiServiceImpl extends ImplBase implements DsRightsApi {
     }
 
     @Override
-    public List<RestrictedIdOutputDto> getAllRestrictedIds(String idType, String system) {
+    public List<RestrictedIdOutputDto> getRestrictedIds() {
         return List.of();
     }
 }
