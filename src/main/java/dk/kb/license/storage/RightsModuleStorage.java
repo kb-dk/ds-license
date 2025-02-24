@@ -42,6 +42,8 @@ public class RightsModuleStorage extends BaseModuleStorage{
             RESTRICTED_ID_IDTYPE +" = ?" ;
     private final String deleteRestrictedIdQuery = "DELETE FROM " + RESTRICTED_ID_TABLE + " WHERE " + RESTRICTED_ID_ID + " = ? AND " + RESTRICTED_ID_IDTYPE + " = ? AND " + RESTRICTED_ID_SYSTEM + " = ? ";
 
+    private final String getAllRestrictedIdsQuery = "SELECT * FROM " + RESTRICTED_ID_TABLE;
+
     /**
      * Initialize the connection to a database
      * @param driverName name of the database driver
@@ -138,6 +140,27 @@ public class RightsModuleStorage extends BaseModuleStorage{
             stmt.execute();
         } catch (SQLException e) {
             log.error("SQL Exception in delete restricted Id:" + e.getMessage());
+            throw e;
+        }
+    }
+
+    public List<RestrictedIdOutputDto> getAllRestrictedIds() throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(getAllRestrictedIdsQuery)) {
+            ResultSet res = stmt.executeQuery();
+            List<RestrictedIdOutputDto> outputList = new ArrayList<>();
+            while (res.next()) {
+                RestrictedIdOutputDto output = new RestrictedIdOutputDto();
+                output.setId(res.getString(RESTRICTED_ID_ID));
+                output.setIdType(res.getString(RESTRICTED_ID_IDTYPE));
+                output.setSystem(res.getString(RESTRICTED_ID_SYSTEM));
+                output.setComment(res.getString(RESTRICTED_ID_COMMENT));
+                output.setModifiedBy(res.getString(RESTRICTED_ID_MODIFIED_BY));
+                output.setModifiedTime(res.getLong(RESTRICTED_ID_MODIFIED_TIME));
+                outputList.add(output);
+            }
+            return outputList;
+        } catch (SQLException e) {
+            log.error("SQL Exception in get all restricted ID" + e.getMessage());
             throw e;
         }
     }
