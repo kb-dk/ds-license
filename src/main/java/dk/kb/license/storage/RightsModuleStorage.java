@@ -1,6 +1,7 @@
 package dk.kb.license.storage;
 
 import dk.kb.license.config.ServiceConfig;
+import dk.kb.license.model.v1.DrHoldbackRuleDto;
 import dk.kb.license.model.v1.RestrictedIdOutputDto;
 import dk.kb.util.yaml.YAML;
 import org.slf4j.Logger;
@@ -47,8 +48,32 @@ public class RightsModuleStorage extends BaseModuleStorage{
             RESTRICTED_ID_IDVALUE +" = ? AND " +
             RESTRICTED_ID_IDTYPE +" = ?" ;
     private final String deleteRestrictedIdQuery = "DELETE FROM " + RESTRICTED_ID_TABLE + " WHERE " + RESTRICTED_ID_IDVALUE + " = ? AND " + RESTRICTED_ID_IDTYPE + " = ? AND " + RESTRICTED_ID_PLATFORM + " = ? ";
-
     private final String allRestrictedIdsQuery = "SELECT * FROM " + RESTRICTED_ID_TABLE;
+
+    private final String DR_HOLDBACK_RULES_TABLE = "DR_HOLDBACK_RULES";
+    private final String DR_HOLDBACK_RULES_ID = "id";
+    private final String DR_HOLDBACK_RULES_DAYS = "days";
+    private final String DR_HOLDBACK_RULES_NAME = "name";
+
+    private final String createDrHoldbackRuleQuery = "INSERT INTO "+DR_HOLDBACK_RULES_TABLE +
+            " ("+ DR_HOLDBACK_RULES_ID +","+ DR_HOLDBACK_RULES_NAME +","+ DR_HOLDBACK_RULES_DAYS +")" +
+            " VALUES (?,?,?)";
+    private final String deleteDrHoldbackRuleQuery = "DELETE FROM " + DR_HOLDBACK_RULES_TABLE +
+            " WHERE id = ?";
+    private final String getDrHoldbackDaysFromNameQuery = "SELECT " + DR_HOLDBACK_RULES_DAYS +" FROM "+DR_HOLDBACK_RULES_TABLE +
+            " WHERE name = ?";
+    private final String getDrHoldbackDaysFromIDQuery = "SELECT " + DR_HOLDBACK_RULES_DAYS +" FROM "+DR_HOLDBACK_RULES_TABLE +
+            " WHERE id = ?";
+    private final String getAllDrHoldbackRulesQuery = "SELECT * FROM " + DR_HOLDBACK_RULES_TABLE;
+    private final String getDrHoldbackRuleFromId = "SELECT * FROM " + DR_HOLDBACK_RULES_TABLE
+            + " WHERE id = ?";
+    private final String updateDrHoldbackDaysForId = "Update " + DR_HOLDBACK_RULES_TABLE
+            + " SET days = ?"
+            + " WHERE id = ?";
+    private final String updateDrHoldbackDaysForName = "Update " + DR_HOLDBACK_RULES_TABLE
+            + " SET days = ?"
+            + " WHERE name = ?";
+
 
     public RightsModuleStorage() throws SQLException {
         connection = dataSource.getConnection();
@@ -185,6 +210,163 @@ public class RightsModuleStorage extends BaseModuleStorage{
             return output;
         } catch (SQLException e) {
             log.error("SQL Exception in readClause:" + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Create a holdback rule for DR content
+     *
+     * @param id id of the rule
+     * @param name name of the rule
+     * @param days number of holdback days
+     * @throws SQLException
+     */
+    public void createDrHoldbackRule(String id, String name, int days) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(createDrHoldbackRuleQuery)) {
+            stmt.setString(1, id);
+            stmt.setString(2, name);
+            stmt.setInt(3, days);
+            stmt.execute();
+        } catch (SQLException e) {
+            log.error("SQL Exception in createDrHoldbackRule:" + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Delete a holdback rule for DR content
+     * @param id id of the rule
+     * @throws SQLException
+     */
+    public void deleteDrHoldbackRule(String id) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(deleteDrHoldbackRuleQuery)) {
+            stmt.setString(1,id);
+            stmt.execute();
+        } catch (SQLException e) {
+            log.error("SQL Exception in createDrHoldbackRule:" + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Get the number of holdback days
+     * @param id id of the holdback rule
+     * @return
+     * @throws SQLException
+     */
+    public int getDrHoldbackdaysFromID(String id) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(getDrHoldbackDaysFromIDQuery)) {
+            stmt.setString(1,id);
+            ResultSet res = stmt.executeQuery();
+            if (res.next()) {
+                return res.getInt(DR_HOLDBACK_RULES_DAYS);
+            }
+            return -1;
+        } catch (SQLException e) {
+            log.error("SQL Exception in createDrHoldbackRule:" + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Get the number of holdback days
+     *
+     * @param name name of the holdback rule
+     * @return
+     * @throws SQLException
+     */
+    public int getDrHoldbackDaysFromName(String name) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(getDrHoldbackDaysFromNameQuery)) {
+            stmt.setString(1,name);
+            ResultSet res = stmt.executeQuery();
+            if (res.next()) {
+                return res.getInt(DR_HOLDBACK_RULES_DAYS);
+            }
+            return -1;
+        } catch (SQLException e) {
+            log.error("SQL Exception in createDrHoldbackRule:" + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Get a DR holdback rule
+     * @param id id of the rule
+     * @return
+     * @throws SQLException
+     */
+    public DrHoldbackRuleDto getDrHoldbackFromID(String id) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(getDrHoldbackRuleFromId)) {
+            stmt.setString(1,id);
+            ResultSet res = stmt.executeQuery();
+            if (res.next()) {
+                DrHoldbackRuleDto output = new DrHoldbackRuleDto();
+                output.setId(res.getString(DR_HOLDBACK_RULES_ID));
+                output.setName(res.getString(DR_HOLDBACK_RULES_NAME));
+                output.setDays(res.getInt(DR_HOLDBACK_RULES_DAYS));
+                return output;
+            }
+            return null;
+        } catch (SQLException e) {
+            log.error("SQL Exception in createDrHoldbackRule:" + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * update the number of holdback days of a holdback rule
+     * @param days number of days
+     * @param id id of the rule
+     * @throws SQLException
+     */
+    public void updateDrHolbackdaysForId(int days, String id) throws SQLException {
+        try(PreparedStatement stmt = connection.prepareStatement(updateDrHoldbackDaysForId)) {
+            stmt.setInt(1,days);
+            stmt.setString(2,id);
+            stmt.execute();
+        } catch (SQLException e) {
+            log.error("SQL Exception in updateDrHolbackdaysForId:" + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * update the number of holdback days of a holdback rule
+     * @param days number of days
+     * @param name name of the rule
+     * @throws SQLException
+     */
+    public void updateDrHolbackdaysForName(int days, String name) throws SQLException {
+        try(PreparedStatement stmt = connection.prepareStatement(updateDrHoldbackDaysForName)) {
+            stmt.setInt(1,days);
+            stmt.setString(2,name);
+            stmt.execute();
+        } catch (SQLException e) {
+            log.error("SQL Exception in updateDrHolbackdaysForName:" + e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * list all holdback rules
+     * @return a list of rules
+     * @throws SQLException if fails
+     */
+    public List<DrHoldbackRuleDto> getAllDrHoldbackRules() throws SQLException {
+        try(PreparedStatement stmt = connection.prepareStatement(getAllDrHoldbackRulesQuery)) {
+            List<DrHoldbackRuleDto> output = new ArrayList<>();
+            ResultSet res = stmt.executeQuery();
+            while (res.next()) {
+                DrHoldbackRuleDto rule = new DrHoldbackRuleDto();
+                rule.setId(res.getString(DR_HOLDBACK_RULES_ID));
+                rule.setName(res.getString(DR_HOLDBACK_RULES_NAME));
+                rule.setDays(res.getInt(DR_HOLDBACK_RULES_DAYS));
+                output.add(rule);
+            }
+            return output;
+        } catch (SQLException e) {
+            log.error("SQL Exception in getAllDrHoldbackRules:" + e.getMessage());
             throw e;
         }
     }
