@@ -49,6 +49,14 @@ public class RightsModuleStorage extends BaseModuleStorage{
     private final String deleteRestrictedIdQuery = "DELETE FROM " + RESTRICTED_ID_TABLE + " WHERE " + RESTRICTED_ID_IDVALUE + " = ? AND " + RESTRICTED_ID_IDTYPE + " = ? AND " + RESTRICTED_ID_PLATFORM + " = ? ";
 
     private final String allRestrictedIdsQuery = "SELECT * FROM " + RESTRICTED_ID_TABLE;
+    private final String allRestrictedIdsByIdTypeQuery = allRestrictedIdsQuery +
+            " WHERE "+RESTRICTED_ID_IDTYPE+" = ?";
+    private final String allRestrictedIdsByPlatformQuery = allRestrictedIdsQuery +
+            " WHERE "+RESTRICTED_ID_PLATFORM+" = ?";
+    private final String allRestrictedIdsByIdTypeAndPlatformQuery = allRestrictedIdsQuery +
+            " WHERE "+RESTRICTED_ID_IDTYPE+" = ?" +
+            " AND "+RESTRICTED_ID_PLATFORM+" = ?";
+
 
     public RightsModuleStorage() throws SQLException {
         connection = dataSource.getConnection();
@@ -167,8 +175,22 @@ public class RightsModuleStorage extends BaseModuleStorage{
         }
     }
 
-    public List<RestrictedIdOutputDto> getAllRestrictedIds() throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement(allRestrictedIdsQuery)) {
+    public List<RestrictedIdOutputDto> getAllRestrictedIds(String idType, String platform) throws SQLException {
+        try  {
+            PreparedStatement stmt;
+            if (idType != null && platform != null) {
+                stmt = connection.prepareStatement(allRestrictedIdsByIdTypeAndPlatformQuery);
+                stmt.setString(1,idType);
+                stmt.setString(2,platform);
+            } else if (idType != null && platform == null) {
+                stmt = connection.prepareStatement(allRestrictedIdsByIdTypeQuery);
+                stmt.setString(1,idType);
+            } else if (idType == null && platform != null) {
+                stmt = connection.prepareStatement(allRestrictedIdsByPlatformQuery);
+                stmt.setString(1,platform);
+            } else {
+                stmt = connection.prepareStatement(allRestrictedIdsQuery);
+            }
             ResultSet res = stmt.executeQuery();
             List<RestrictedIdOutputDto> output = new ArrayList<>();
             while (res.next()) {
