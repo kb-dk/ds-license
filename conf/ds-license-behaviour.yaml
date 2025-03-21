@@ -46,6 +46,10 @@ rights:
         - "dr_produktions_id"
         - "egenproduktions_kode"
         - "strict_title"
+    - name: "general"
+      idTypes:
+        - "ds_id"
+        - "strict_title"
   
 #KeyCloakClientSecret can be seen in the KeyCloak server admin page for the AD realm configuration
 #The rsaPublic key can also be seen at the KeyCloak server admin page
