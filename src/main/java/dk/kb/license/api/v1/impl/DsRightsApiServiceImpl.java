@@ -6,13 +6,14 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import dk.kb.license.model.v1.RestrictedIdInputDto;
-import dk.kb.license.model.v1.RestrictedIdOutputDto;
+import dk.kb.license.model.v1.*;
 
 import dk.kb.license.storage.BaseModuleStorage;
 import dk.kb.license.storage.RightsModuleStorage;
 import dk.kb.license.webservice.KBAuthorizationInterceptor;
+import dk.kb.util.webservice.exception.InvalidArgumentServiceException;
 import dk.kb.util.webservice.exception.NotFoundServiceException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.cxf.interceptor.InInterceptors;
 import org.apache.cxf.jaxrs.utils.JAXRSUtils;
 import org.apache.cxf.message.Message;
@@ -157,6 +158,213 @@ public class DsRightsApiServiceImpl extends ImplBase implements DsRightsApi {
         }
     }
 
+
+    /**
+     * create a DR holdback rule.
+     *
+     * @param drHoldbackRuleDto
+     */
+    @Override
+    public void createDrHoldbackRule(DrHoldbackRuleDto drHoldbackRuleDto) {
+        try {
+            BaseModuleStorage.performStorageAction("Create holdback rule", new RightsModuleStorage(), storage -> {
+                ((RightsModuleStorage)storage).createDrHoldbackRule(
+                        drHoldbackRuleDto.getId(),
+                        drHoldbackRuleDto.getName(),
+                        drHoldbackRuleDto.getDays()
+                );
+                return null;
+            });
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+    }
+
+    /**
+     * Delete a holdback rule
+     * @param id id of the holdback rule
+     */
+    @Override
+    public void deleteDrHoldbackRule(String id) {
+        try {
+            BaseModuleStorage.performStorageAction("Delete holdback rule", new RightsModuleStorage(), storage -> {
+                ((RightsModuleStorage)storage).deleteDrHoldbackRule(id);
+                return null;
+            });
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+    }
+
+    /**
+     * Gets a DR holdback rule
+     * @param id the id of the holdback rule
+     * @return
+     */
+    @Override
+    public DrHoldbackRuleDto getDrHoldbackRule(String id) {
+        try {
+            return BaseModuleStorage.performStorageAction("Get holdback rule", new RightsModuleStorage(), storage -> {
+                DrHoldbackRuleDto output = ((RightsModuleStorage)storage).getDrHoldbackFromID(id);
+                if (output != null) {
+                    return output;
+                }
+                throw new NotFoundServiceException("holdback rule not found "+id);
+            });
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+    }
+
+    /**
+     * get all all holdback rules for DR
+     * @return
+     */
+    @Override
+    public List<DrHoldbackRuleDto> getDrHoldbackRules() {
+        try {
+            return BaseModuleStorage.performStorageAction("Get holdback rule", new RightsModuleStorage(), storage -> ((RightsModuleStorage)storage).getAllDrHoldbackRules());
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+    }
+
+    /**
+     * Retrieve the number of days for a holdback rule, either based on either the id or the name of the holdbackrule.
+     *
+     * @param id
+     * @param name
+     * @return the number of
+     */
+    @Override
+    public Integer getDrHoldbackDays(String id, String name) {
+        int days;
+        try {
+            if (!StringUtils.isEmpty(id)) {
+                days = BaseModuleStorage.performStorageAction("Get holdback days", new RightsModuleStorage(), storage -> ((RightsModuleStorage) storage).getDrHoldbackdaysFromID(id));
+            } else if (!StringUtils.isEmpty(name)) {
+                days = BaseModuleStorage.performStorageAction("Get holdback days", new RightsModuleStorage(), storage -> ((RightsModuleStorage) storage).getDrHoldbackDaysFromName(name));
+            } else {
+                throw new InvalidArgumentServiceException("missing id or name");
+            }
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+        if (days > 0) {
+            return days;
+        }
+        throw new NotFoundServiceException("no holdback found for "+ id+" or name "+name);
+    }
+
+    /**
+     * Update the number of holdback days for a holdback rule based on either its id or name
+     * @param days
+     * @param id
+     * @param name
+     */
+    @Override
+    public void updateDrHoldbackDays(Integer days, String id, String name) {
+        try {
+            if (!StringUtils.isEmpty(id)) {
+                BaseModuleStorage.performStorageAction("update holdback dayss", new RightsModuleStorage(), storage -> {
+                    ((RightsModuleStorage) storage).updateDrHolbackdaysForId(days,id);
+                    return null;
+                });
+            } else if (!StringUtils.isEmpty(name)) {
+                BaseModuleStorage.performStorageAction("update holdback dayss", new RightsModuleStorage(), storage -> {
+                    ((RightsModuleStorage) storage).updateDrHolbackdaysForName(days,name);
+                    return null;
+                });
+            } else {
+                throw new InvalidArgumentServiceException("missing id or name");
+            }
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+    }
+
+    /**
+     * set the form and content range combinations for a dr_holdback_id
+     * This requires the holdback_id to be present in the DR holback rule table
+     *
+     * @param drHoldbackId
+     * @param drHoldbackRangeMappingInputDto
+     */
+    @Override
+    public void createHoldbackRanges(String drHoldbackId, List<DrHoldbackRangeMappingInputDto> drHoldbackRangeMappingInputDto) {
+        try {
+            BaseModuleStorage.performStorageAction("Create holdback ranges for "+ drHoldbackId, new RightsModuleStorage(), storage -> {
+                for(DrHoldbackRangeMappingInputDto mapping: drHoldbackRangeMappingInputDto) {
+                    if (((RightsModuleStorage)storage).getDrHoldbackFromID(drHoldbackId) == null) {
+                        throw new InvalidArgumentServiceException("No dr holdback_id "+drHoldbackId);
+                    }
+                    ((RightsModuleStorage)storage).createDrHoldbackMapping(
+                            mapping.getContentRangeFrom(),
+                            mapping.getContentRangeTo(),
+                            mapping.getFormRangeFrom(),
+                            mapping.getFormRangeTo(),
+                            drHoldbackId
+                    );
+                }
+                return null;
+            });
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+    }
+
+    /**
+     * Deletes all form and content range combinations for a drHoldbackID
+     * @param drHoldbackId
+     */
+    @Override
+    public void deleteHoldbackRanges(String drHoldbackId) {
+        try {
+            BaseModuleStorage.performStorageAction("Delete holdback ranges for " + drHoldbackId, new RightsModuleStorage(), storage -> {
+                ((RightsModuleStorage)storage).deleteMappingsForDrHolbackId(drHoldbackId);
+                return null;
+            });
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+    }
+
+    /**
+     * Gets the dr_holdback_id from a content and form metadata values.
+     *
+     *
+     * @param content
+     * @param form
+     * @return
+     */
+    @Override
+    public String getHoldbackIdFromContentAndForm(Integer content, Integer form) {
+        try {
+            return BaseModuleStorage.performStorageAction("Get holdback ID", new RightsModuleStorage(), storage -> {
+                String id  = ((RightsModuleStorage) storage).getHoldbackRuleId(content, form);
+                if (id == null) {
+                    throw new NotFoundServiceException("No holdback found for content:"+content+" form:"+form);
+                }
+                return id;
+            });
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+    }
+
+    @Override
+    public List<DrHoldbackRangeMappingDto> getHoldbackRanges(String drHoldbackId) {
+        try {
+            return BaseModuleStorage.performStorageAction("Get holdbackmappings for "+drHoldbackId, new RightsModuleStorage(), storage-> ((RightsModuleStorage)storage).getHoldbackRangesForHoldbackId(drHoldbackId));
+        } catch (Exception e) {
+            throw handleException(e);
+        }
+    }
+
+    /**
+     * Gets the name of the current user from the OAuth token.
+     * @return
+     */
     private String getCurrentUserID() {
         Message message = JAXRSUtils.getCurrentMessage();
         AccessToken token = (AccessToken) message.get(KBAuthorizationInterceptor.ACCESS_TOKEN);

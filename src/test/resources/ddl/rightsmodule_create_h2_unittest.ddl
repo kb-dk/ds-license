@@ -18,11 +18,11 @@ CREATE TABLE IF NOT EXISTS DR_HOLDBACK_RULES (
 );
 
 CREATE TABLE IF NOT EXISTS DR_HOLDBACK_MAP (
-                              id            VARCHAR(256) PRIMARY KEY,
+                              id            BIGINT PRIMARY KEY,
                               content_range_from INTEGER NOT NULL,
                               content_range_to INTEGER NOT NULL,
                               form_range_from INTEGER NOT NULL,
                               form_range_to INTEGER NOT NULL,
-                              holdback_id   VARCHAR(32) references DR_HOLDBACK_RULES(id)
+                              dr_holdback_id   VARCHAR(32) references DR_HOLDBACK_RULES(id)
 );
 
