@@ -30,7 +30,7 @@ public class RightsModuleFacade {
      * @throws SQLException if there is an error while persisting the restricted ID in the database.
      */
     public static void createRestrictedId(RestrictedIdInputDto restrictedIdInputDto, String userId) throws SQLException {
-        BaseModuleStorage.performStorageAction("Persist restricted ID (klausulering)", new RightsModuleStorage(), storage -> {
+        BaseModuleStorage.performStorageAction("Persist restricted ID (klausulering)", RightsModuleStorage.class, storage -> {
             ((RightsModuleStorage) storage).createRestrictedId(
                     restrictedIdInputDto.getIdValue(),
                     restrictedIdInputDto.getIdType(),
@@ -41,6 +41,11 @@ public class RightsModuleFacade {
             log.info("Created restriction {}", restrictedIdInputDto);
             return null;
         });
+    }
+
+
+    public static RestrictedIdOutputDto getRestrictedId(String id, String idType, String platform) throws SQLException {
+            return BaseModuleStorage.performStorageAction("Get restricted ID", RightsModuleStorage.class, storage -> ((RightsModuleStorage)storage).getRestrictedId(id, idType, platform));
     }
 
     /**
@@ -54,7 +59,7 @@ public class RightsModuleFacade {
      *                                   specified content and form.
      */
     public static String getHoldbackIdFromContentAndFormValues(Integer content, Integer form)  {
-        return BaseModuleStorage.performStorageAction("Get holdback ID", getRightsStorage(), storage -> {
+        return BaseModuleStorage.performStorageAction("Get holdback ID", RightsModuleStorage.class, storage -> {
             String id = ((RightsModuleStorage) storage).getHoldbackRuleId(content, form);
             if (id == null) {
                 log.warn("No holdback found for content: '{}' and form: '{}'. Returning an empty string", content, form);
@@ -75,7 +80,7 @@ public class RightsModuleFacade {
      * @throws NotFoundServiceException if no rule is found for the specified holdback ID.
      */
     public static DrHoldbackRuleDto getDrHoldbackRuleById(String holdbackId) throws SQLException {
-        return BaseModuleStorage.performStorageAction("Get holdback rule", new RightsModuleStorage(), storage -> {
+        return BaseModuleStorage.performStorageAction("Get holdback rule", RightsModuleStorage.class, storage -> {
             DrHoldbackRuleDto output = ((RightsModuleStorage) storage).getDrHoldbackFromID(holdbackId);
             if (output != null) {
                 return output;
@@ -123,7 +128,7 @@ public class RightsModuleFacade {
      * @throws SQLException if an error occurs during the SQL process.
      */
     public static boolean isIdRestricted(String id, String idType, String platform) throws SQLException {
-        return BaseModuleStorage.performStorageAction("Get restricted id", getRightsStorage(), storage -> {
+        return BaseModuleStorage.performStorageAction("Get restricted id", RightsModuleStorage.class, storage -> {
             RestrictedIdOutputDto idOutput = ((RightsModuleStorage) storage).getRestrictedId(id, idType, platform);
             // If the object is null, then id is not restricted
             return idOutput != null;
@@ -142,7 +147,7 @@ public class RightsModuleFacade {
      * @return true if the production code is allowed; false otherwise
      */
     public static boolean isProductionCodeAllowed(String productionCode, String platform)  {
-        return BaseModuleStorage.performStorageAction("Get restricted id", getRightsStorage(), storage -> {
+        return BaseModuleStorage.performStorageAction("Get restricted id", RightsModuleStorage.class, storage -> {
             RestrictedIdOutputDto idOutput = ((RightsModuleStorage) storage).getRestrictedId(productionCode, "egenproduktions_kode", platform);
             // If the object is null, then productionCode from metadata is not allowed
 
@@ -155,15 +160,4 @@ public class RightsModuleFacade {
             }
         });
     }
-
-
-    private static RightsModuleStorage getRightsStorage() {
-        try {
-            return new RightsModuleStorage();
-        } catch (SQLException e) {
-            log.error("Error creating Storage ",e);
-            throw new InternalServiceException("Error creating storage");
-        }
-    }
-
 }
