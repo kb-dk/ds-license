@@ -15,7 +15,6 @@ servers:
     description: 'Version 1'
 
 paths:
-
   /checkAccessForIds:
     post:
       tags:
@@ -217,8 +216,7 @@ paths:
           in: query
           description: Filter On platform
           schema:
-            type: string
-          example: "dr"
+            $ref: '#/components/schemas/PlatformEnum'
       responses:
         '200':
           description:
@@ -254,15 +252,15 @@ paths:
             example:
               - idValue: "test:multi:1"
                 idType: "ds_id"
-                platform: "dr"
+                platform: "drArkiv"
                 comment: "test multi 2"
               - idValue: "test:multi:2"
                 idType: "ds_id"
-                platform: "dr"
+                platform: "drArkiv"
                 comment: "test multi 1"
               - idValue: "test:multi:3"
                 idType: "dr_produktions_id"
-                platform: "dr"
+                platform: "drArkiv"
                 comment: "test multi 1"
       responses:
         '204':
@@ -292,10 +290,10 @@ paths:
             example:
               - idValue: "test:multi:1"
                 idType: "ds_id"
-                platform: "dr"
+                platform: "drArkiv"
               - idValue: "test:multi:3"
                 idType: "dr_produktions_id"
-                platform: "dr"
+                platform: "drArkiv"
       responses:
         '200':
           description: deleted
@@ -324,11 +322,11 @@ paths:
             - "dr_produktions_id"
             - "egenproduktions_kode"
             - "strict_title"
-        - name: system
+        - name: platform
           in: query
           required: true
           schema:
-            type: string
+            $ref: "#/components/schemas/PlatformEnum"
       responses:
         '200':
           description: Get a restricted ID details
@@ -365,7 +363,7 @@ paths:
           in: query
           required: true
           schema:
-            type: string
+            $ref: '#/components/schemas/PlatformEnum'
         - name: touchRecord
           in: query
           schema:
@@ -397,7 +395,7 @@ paths:
                 value:
                   idValue: 'test1'
                   idType: 'dr_produktions_id'
-                  platform: 'dr'
+                  platform: 'drArkiv'
                   comment: 'Dette er en test'
       responses:
         '201':
@@ -425,7 +423,7 @@ paths:
                   value:
                     idValue: 'test1'
                     idType: 'dr_produktions_id'
-                    platform: 'dr'
+                    platform: 'drArkiv'
                     comment: 'Dette er en opdateret kommentar'
 
         responses:
@@ -818,7 +816,6 @@ components:
            items:
              type: string             
 
-
     ValidateAccessInput:
       type: object
       properties: 
@@ -840,7 +837,6 @@ components:
       properties:
         access:
           type: boolean
-
 
     LicenseOverview:
       type: object
@@ -867,7 +863,6 @@ components:
            example: ['teg@kb.dk']
            items:
              type: string     
-
 
     GetUserGroupsAndLicensesInput:
       type: object
@@ -911,7 +906,6 @@ components:
           items:
             $ref: '#/components/schemas/UserObjAttribute'
 
-
     GetUsersLicensesOutput:
       type: object
       properties:                
@@ -919,7 +913,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LicenseOverview'
-
 
     GetUsersFilterQueryOutput:
       type: object
@@ -985,6 +978,11 @@ components:
             type: string 
 
     # Rights module
+    PlatformEnum:
+      type: string
+      enum:
+        - DRARKIV
+        - GENERIC
 
     RestrictedIdInput:
       type: object
@@ -998,7 +996,7 @@ components:
         idType:
           type: string
         platform:
-          type: string
+          $ref: "#/components/schemas/PlatformEnum"
         comment:
           type: string
 
@@ -1010,7 +1008,7 @@ components:
         idType:
           type: string
         platform:
-          type: string
+          $ref: "#/components/schemas/PlatformEnum"
         comment:
           type: string
         modifiedBy:
@@ -1076,10 +1074,7 @@ components:
           type: string
           description: "ID of the record, which this metadata comes from."
         platform:
-          type: string
-          enum:
-            - DRARKIV
-            - GENERIC
+          $ref: "#/components/schemas/PlatformEnum"
           description: "The platform that rights are calculated for."
         startTime:
           type: string
@@ -1153,7 +1148,6 @@ components:
         dr:
           $ref: "#/components/schemas/RightsCalculationOutputDr"
 
-
     RightsCalculationOutputGeneral:
       type: object
       description: "Object containing results from all rights calculations that are applicable in general for the record"
@@ -1212,8 +1206,7 @@ components:
                 type: string
               description: 'The roles stated in the OAuth2 accessToken'
               example: [ read, write, admin ]
-    
-    
+
     Error:
       type: object
       required:

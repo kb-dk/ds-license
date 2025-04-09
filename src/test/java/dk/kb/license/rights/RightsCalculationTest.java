@@ -2,7 +2,7 @@ package dk.kb.license.rights;
 
 import dk.kb.license.config.ServiceConfig;
 import dk.kb.license.facade.RightsModuleFacade;
-import dk.kb.license.model.v1.RestrictedIdInputDto;
+import dk.kb.license.model.v1.PlatformEnumDto;
 import dk.kb.license.model.v1.RightsCalculationInputDto;
 import dk.kb.license.model.v1.RightsCalculationOutputDto;
 import dk.kb.license.storage.BaseModuleStorage;
@@ -44,7 +44,7 @@ public class RightsCalculationTest extends DsLicenseUnitTestUtil {
     @Test
     public void testHoldbackEducationEdgeCase() throws SQLException {
         RightsCalculationInputDto alwaysEducationRecord = new RightsCalculationInputDto("testRecord1", "2016-01-20T10:34:42+0100",
-                RightsCalculationInputDto.PlatformEnum.DRARKIV,4411, 6000, 3190, 1000, "1000", "Program 1", "9283748300", "ds.tv");
+                PlatformEnumDto.DRARKIV,4411, 6000, 3190, 1000, "1000", "Program 1", "9283748300", "ds.tv");
 
         RightsCalculationOutputDto output = RightsModuleFacade.calculateRightsForRecord(alwaysEducationRecord);
 
@@ -54,7 +54,7 @@ public class RightsCalculationTest extends DsLicenseUnitTestUtil {
     @Test
     public void testHoldbackTrailersEdgeCase() throws SQLException {
         RightsCalculationInputDto alwaysEducationRecord = new RightsCalculationInputDto("testRecord1", "2016-01-20T10:34:42+0100",
-                RightsCalculationInputDto.PlatformEnum.DRARKIV,7000, 1000, 3190, 1000, "1000", "Program 1", "9283748300", "ds.tv");
+                PlatformEnumDto.DRARKIV,7000, 1000, 3190, 1000, "1000", "Program 1", "9283748300", "ds.tv");
 
         RightsCalculationOutputDto output = RightsModuleFacade.calculateRightsForRecord(alwaysEducationRecord);
 
@@ -64,7 +64,7 @@ public class RightsCalculationTest extends DsLicenseUnitTestUtil {
 
     @Test
     public void badHoldbackRecordTest() throws SQLException {
-        RightsCalculationInputDto badHoldbackValues = new RightsCalculationInputDto("badValues", "2016-01-06T18:08:17+0100", RightsCalculationInputDto.PlatformEnum.DRARKIV, 1800
+        RightsCalculationInputDto badHoldbackValues = new RightsCalculationInputDto("badValues", "2016-01-06T18:08:17+0100", PlatformEnumDto.DRARKIV, 1800
                 , 0, 3100, 2211, "1000", "Record with bad holdback values", "9283748300", "ds.tv");
 
         RightsCalculationOutputDto output = RightsModuleFacade.calculateRightsForRecord(badHoldbackValues);
@@ -76,7 +76,7 @@ public class RightsCalculationTest extends DsLicenseUnitTestUtil {
     public void testHoldbackDate() throws SQLException {
 
         RightsCalculationInputDto tenYearHoldbackRecord = new RightsCalculationInputDto("testRecord1", "2016-01-20T10:34:42+0100",
-                RightsCalculationInputDto.PlatformEnum.DRARKIV,4411, 0, 3190, 1000, "1000", "Program 1", "9283748300", "ds.tv");
+                PlatformEnumDto.DRARKIV,4411, 0, 3190, 1000, "1000", "Program 1", "9283748300", "ds.tv");
 
         RightsCalculationOutputDto output = RightsModuleFacade.calculateRightsForRecord(tenYearHoldbackRecord);
 
@@ -86,7 +86,7 @@ public class RightsCalculationTest extends DsLicenseUnitTestUtil {
     @Test
     public void testHoldbackDateNews() throws SQLException {
         RightsCalculationInputDto newsRecord = new RightsCalculationInputDto("testRecord1", "2016-01-01T10:34:42+0100",
-                RightsCalculationInputDto.PlatformEnum.DRARKIV,1100, 0, 1200, 1000, "1000", "Program 1", "9283748300", "ds.tv");
+                PlatformEnumDto.DRARKIV,1100, 0, 1200, 1000, "1000", "Program 1", "9283748300", "ds.tv");
 
         RightsCalculationOutputDto output = RightsModuleFacade.calculateRightsForRecord(newsRecord);
 
@@ -97,7 +97,7 @@ public class RightsCalculationTest extends DsLicenseUnitTestUtil {
     public void testHoldbackName() throws SQLException {
 
         RightsCalculationInputDto tenYearHoldbackRecord = new RightsCalculationInputDto("testRecord1", "2016-01-20T10:34:42+0100",
-                RightsCalculationInputDto.PlatformEnum.DRARKIV,4411, 0, 3190, 1000, "1000", "Program 1", "9283748300", "ds.tv");
+                PlatformEnumDto.DRARKIV,4411, 0, 3190, 1000, "1000", "Program 1", "9283748300", "ds.tv");
 
         RightsCalculationOutputDto output = RightsModuleFacade.calculateRightsForRecord(tenYearHoldbackRecord);
 
@@ -108,7 +108,7 @@ public class RightsCalculationTest extends DsLicenseUnitTestUtil {
     public void testHoldbackForeign() throws SQLException {
 
         RightsCalculationInputDto foreignRecord = new RightsCalculationInputDto("testRecord1", "2016-01-20T10:34:42+0100",
-                RightsCalculationInputDto.PlatformEnum.DRARKIV,4411, 0, 3190, 5000, "5000", "Program 1", "9283748300", "ds.tv");
+                PlatformEnumDto.DRARKIV,4411, 0, 3190, 5000, "5000", "Program 1", "9283748300", "ds.tv");
 
         RightsCalculationOutputDto output = RightsModuleFacade.calculateRightsForRecord(foreignRecord);
 
@@ -118,7 +118,7 @@ public class RightsCalculationTest extends DsLicenseUnitTestUtil {
 
     @Test
     public void holdbackJanuaryEdgeTest() throws SQLException {
-        RightsCalculationInputDto yearlyHoldback1 = new RightsCalculationInputDto("yearlyHoldback1","1999-01-01T10:30:00+0100", RightsCalculationInputDto.PlatformEnum.DRARKIV,
+        RightsCalculationInputDto yearlyHoldback1 = new RightsCalculationInputDto("yearlyHoldback1","1999-01-01T10:30:00+0100", PlatformEnumDto.DRARKIV,
                 4411, 0, 3190, 1000, "1000", "Program 1", "9283748300", "ds.tv" );
         RightsCalculationOutputDto output1 = RightsModuleFacade.calculateRightsForRecord(yearlyHoldback1);
         // 1st of January test
@@ -127,7 +127,7 @@ public class RightsCalculationTest extends DsLicenseUnitTestUtil {
 
     @Test
     public void holdbackDecemberEdgeTest() throws SQLException {
-        RightsCalculationInputDto yearlyHoldback2 = new RightsCalculationInputDto("yearlyHoldback1", "2010-12-31T10:00:00+0100", RightsCalculationInputDto.PlatformEnum.DRARKIV,
+        RightsCalculationInputDto yearlyHoldback2 = new RightsCalculationInputDto("yearlyHoldback1", "2010-12-31T10:00:00+0100", PlatformEnumDto.DRARKIV,
                 4411, 0, 3190, 1000, "1000", "Program 1", "9283748300", "ds.tv");
         RightsCalculationOutputDto output2 = RightsModuleFacade.calculateRightsForRecord(yearlyHoldback2);
         // 31st of December test
@@ -136,7 +136,7 @@ public class RightsCalculationTest extends DsLicenseUnitTestUtil {
 
     @Test
     public void holdbackYearlyRandomDateTest() throws SQLException {
-        RightsCalculationInputDto yearlyHoldback3 = new RightsCalculationInputDto("yearlyHoldback1","1990-06-20T10:00:00+0100", RightsCalculationInputDto.PlatformEnum.DRARKIV,
+        RightsCalculationInputDto yearlyHoldback3 = new RightsCalculationInputDto("yearlyHoldback1","1990-06-20T10:00:00+0100", PlatformEnumDto.DRARKIV,
                 4411, 0, 3190, 1000, "1000", "Program 1", "9283748300", "ds.tv");
         RightsCalculationOutputDto output3 = RightsModuleFacade.calculateRightsForRecord(yearlyHoldback3);
         // Random date in June test
@@ -145,7 +145,7 @@ public class RightsCalculationTest extends DsLicenseUnitTestUtil {
 
     @Test
     public void holdbackRadioTest() throws SQLException {
-        RightsCalculationInputDto yearlyHoldback3 = new RightsCalculationInputDto("radioHoldback","1990-06-20T10:00:00+0100", RightsCalculationInputDto.PlatformEnum.DRARKIV,
+        RightsCalculationInputDto yearlyHoldback3 = new RightsCalculationInputDto("radioHoldback","1990-06-20T10:00:00+0100", PlatformEnumDto.DRARKIV,
                 4411, 0, 3190, 1000, "1000", "Program 1", "9283748300", "ds.radio");
         RightsCalculationOutputDto radioHoldback = RightsModuleFacade.calculateRightsForRecord(yearlyHoldback3);
         assertEquals("1994-01-01T00:00:00Z", radioHoldback.getDr().getHoldbackExpiredDate());
@@ -155,14 +155,14 @@ public class RightsCalculationTest extends DsLicenseUnitTestUtil {
     @Test
     public void restrictedDrProductionIdTest() throws SQLException {
         try (RightsModuleStorage storage = new RightsModuleStorage()) {
-            storage.createRestrictedId("1234567890", "dr_produktions_id", "dr", "Not allowed dr production ID", "TestUser", System.currentTimeMillis());
+            storage.createRestrictedId("1234567890", "dr_produktions_id", PlatformEnumDto.DRARKIV.getValue(), "Not allowed dr production ID", "TestUser", System.currentTimeMillis());
             storage.commit();
         } catch (Exception e) {
             throw e;
         }
 
         RightsCalculationInputDto drProductionIdRestrictedEntry = new RightsCalculationInputDto("Restricted DR Production ID","1990-06-20T10:00:00+0100",
-                RightsCalculationInputDto.PlatformEnum.DRARKIV,
+                PlatformEnumDto.DRARKIV,
                 4411, 0, 3190, 1000, "1000", "Program 1", "1234567890", "ds.tv");
         RightsCalculationOutputDto restrictedDrProductionID = RightsModuleFacade.calculateRightsForRecord(drProductionIdRestrictedEntry);
 
@@ -172,14 +172,14 @@ public class RightsCalculationTest extends DsLicenseUnitTestUtil {
     @Test
     public void restrictedDsIdTest() throws SQLException {
         try (RightsModuleStorage storage = new RightsModuleStorage()) {
-            storage.createRestrictedId("restrictedId","ds_id","dr","dangerous ID","TestUser",System.currentTimeMillis());
+            storage.createRestrictedId("restrictedId","ds_id",PlatformEnumDto.DRARKIV.getValue(),"dangerous ID","TestUser",System.currentTimeMillis());
             storage.commit();
         } catch (Exception e) {
             throw e;
         }
 
         RightsCalculationInputDto restrictedDsId = new RightsCalculationInputDto("restrictedId","1990-06-20T10:00:00+0100",
-                RightsCalculationInputDto.PlatformEnum.DRARKIV,
+                PlatformEnumDto.DRARKIV,
                 4411, 0, 3190, 1000, "1000", "Program 1", "9283748300", "ds.tv");
         RightsCalculationOutputDto restrictedDsID = RightsModuleFacade.calculateRightsForRecord(restrictedDsId);
 
@@ -188,14 +188,14 @@ public class RightsCalculationTest extends DsLicenseUnitTestUtil {
     @Test
     public void restrictedTitleTest() throws SQLException {
         try (RightsModuleStorage storage = new RightsModuleStorage()) {
-            storage.createRestrictedId("Restricted Test Title","strict_title","dr","This title can never be shown","TestUser",System.currentTimeMillis());
+            storage.createRestrictedId("Restricted Test Title","strict_title",PlatformEnumDto.DRARKIV.getValue(), "This title can never be shown","TestUser",System.currentTimeMillis());
             storage.commit();
         } catch (Exception e) {
             throw e;
         }
 
         RightsCalculationInputDto restrictedTitleRecord = new RightsCalculationInputDto("restrictedId","1990-06-20T10:00:00+0100",
-                RightsCalculationInputDto.PlatformEnum.DRARKIV,
+                PlatformEnumDto.DRARKIV,
                 4411, 0, 3190, 1000, "1000", "Restricted Test Title", "9283748300", "ds.tv");
         RightsCalculationOutputDto restrictedTitleOutput = RightsModuleFacade.calculateRightsForRecord(restrictedTitleRecord);
 
@@ -205,14 +205,14 @@ public class RightsCalculationTest extends DsLicenseUnitTestUtil {
     @Test
     public void allowedProductionCodeFromMetadataTest() throws SQLException {
         try (RightsModuleStorage storage = new RightsModuleStorage()) {
-            storage.createRestrictedId("1000","egenproduktions_kode","dr","1000 equals ownproduction","TestUser",System.currentTimeMillis());
+            storage.createRestrictedId("1000","egenproduktions_kode",PlatformEnumDto.DRARKIV.getValue(),"1000 equals ownproduction","TestUser",System.currentTimeMillis());
             storage.commit();
         } catch (Exception e) {
             throw e;
         }
 
         RightsCalculationInputDto allowedOwnProductionCode = new RightsCalculationInputDto("restrictedId","1990-06-20T10:00:00+0100",
-                RightsCalculationInputDto.PlatformEnum.DRARKIV,
+                PlatformEnumDto.DRARKIV,
                 4411, 0, 3190, 1000, "1000", "Random program", "9283748300", "ds.tv");
         RightsCalculationOutputDto allowedOwnProduction = RightsModuleFacade.calculateRightsForRecord(allowedOwnProductionCode);
 

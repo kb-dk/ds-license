@@ -56,7 +56,7 @@ public class DsRightsApiServiceImpl extends ImplBase implements DsRightsApi {
     }
 
     @Override
-    public void deleteRestrictedId(String id, String idType, String platform, Boolean touchRecord) {
+    public void deleteRestrictedId(String id, String idType, PlatformEnumDto platform, Boolean touchRecord) {
         log.debug("Deleted restricted id:{} idType:{} platform:{}", id, idType, platform);
         try {
             RightsModuleFacade.deleteRestrictedId(id, idType, platform, getCurrentUserID(),touchRecord);
@@ -66,7 +66,7 @@ public class DsRightsApiServiceImpl extends ImplBase implements DsRightsApi {
     }
 
     @Override
-    public RestrictedIdOutputDto getRestrictedId(String id, String idType, String platform) {
+    public RestrictedIdOutputDto getRestrictedId(String id, String idType, PlatformEnumDto platform) {
         try {
             log.debug("Get restricted ID id:{} idType:{} platform:{}", id, idType, platform);
             RestrictedIdOutputDto result = RightsModuleFacade.getRestrictedId(id, idType, platform);
@@ -80,7 +80,7 @@ public class DsRightsApiServiceImpl extends ImplBase implements DsRightsApi {
     }
 
     @Override
-    public List<RestrictedIdOutputDto> getAllRestrictedIds(String idType, String platform) {
+    public List<RestrictedIdOutputDto> getAllRestrictedIds(String idType, PlatformEnumDto platform) {
         try {
             return RightsModuleFacade.getAllRestrictedIds(idType,platform);
         } catch (Exception e) {
