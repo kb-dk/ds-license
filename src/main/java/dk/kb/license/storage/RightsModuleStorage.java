@@ -3,6 +3,7 @@ package dk.kb.license.storage;
 import dk.kb.license.config.ServiceConfig;
 import dk.kb.license.model.v1.DrHoldbackRangeMappingDto;
 import dk.kb.license.model.v1.DrHoldbackRuleDto;
+import dk.kb.license.model.v1.PlatformEnumDto;
 import dk.kb.license.model.v1.RestrictedIdOutputDto;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -152,7 +153,7 @@ public class RightsModuleStorage extends BaseModuleStorage{
                 RestrictedIdOutputDto output = new RestrictedIdOutputDto();
                 output.setIdValue(res.getString(RESTRICTED_ID_IDVALUE));
                 output.setIdType(res.getString(RESTRICTED_ID_IDTYPE));
-                output.setPlatform(res.getString(RESTRICTED_ID_PLATFORM));
+                output.setPlatform(PlatformEnumDto.fromValue(res.getString(RESTRICTED_ID_PLATFORM)));
                 output.setComment(res.getString(RESTRICTED_ID_COMMENT));
                 output.setModifiedBy(res.getString(RESTRICTED_ID_MODIFIED_BY));
                 output.setModifiedTime(res.getLong(RESTRICTED_ID_MODIFIED_TIME));
@@ -231,7 +232,7 @@ public class RightsModuleStorage extends BaseModuleStorage{
                 RestrictedIdOutputDto restrictedIdOutputDto = new RestrictedIdOutputDto();
                 restrictedIdOutputDto.setIdValue(res.getString(RESTRICTED_ID_IDVALUE));
                 restrictedIdOutputDto.setIdType(res.getString(RESTRICTED_ID_IDTYPE));
-                restrictedIdOutputDto.setPlatform(res.getString(RESTRICTED_ID_PLATFORM));
+                restrictedIdOutputDto.setPlatform(PlatformEnumDto.fromValue(res.getString(RESTRICTED_ID_PLATFORM)));
                 restrictedIdOutputDto.setComment(res.getString(RESTRICTED_ID_COMMENT));
                 restrictedIdOutputDto.setModifiedBy(res.getString(RESTRICTED_ID_MODIFIED_BY));
                 restrictedIdOutputDto.setModifiedTime(res.getLong(RESTRICTED_ID_MODIFIED_TIME));

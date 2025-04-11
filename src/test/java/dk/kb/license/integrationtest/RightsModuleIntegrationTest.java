@@ -2,6 +2,7 @@ package dk.kb.license.integrationtest;
 
 import dk.kb.license.config.ServiceConfig;
 import dk.kb.license.facade.RightsModuleFacade;
+import dk.kb.license.model.v1.PlatformEnumDto;
 import dk.kb.license.model.v1.RestrictedIdInputDto;
 import dk.kb.license.model.v1.RestrictedIdOutputDto;
 import dk.kb.license.storage.BaseModuleStorage;
@@ -92,7 +93,7 @@ public class RightsModuleIntegrationTest extends DsLicenseUnitTestUtil {
         RestrictedIdInputDto restrictedId = new RestrictedIdInputDto();
         restrictedId.setIdValue("ds.tv:oai:io:e027e1dc-5006-4f54-b2b7-ec451940c500");
         restrictedId.setIdType("ds_id");
-        restrictedId.setPlatform("dr");
+        restrictedId.setPlatform(PlatformEnumDto.DRARKIV);
         RightsModuleFacade.deleteRestrictedId(restrictedId.getIdValue(),restrictedId.getIdType(), restrictedId.getPlatform(),"test",true);
         RightsModuleFacade.createRestrictedId(restrictedId,"test",true);
     }
@@ -103,12 +104,12 @@ public class RightsModuleIntegrationTest extends DsLicenseUnitTestUtil {
         RestrictedIdInputDto restrictedId = new RestrictedIdInputDto();
         restrictedId.setIdValue("00123466486");
         restrictedId.setIdType("dr_produktions_id");
-        restrictedId.setPlatform("dr");
+        restrictedId.setPlatform(PlatformEnumDto.DRARKIV);
         RightsModuleFacade.deleteRestrictedId(restrictedId.getIdValue(),restrictedId.getIdType(), restrictedId.getPlatform(),"test",false);
 
 
         RightsModuleFacade.createRestrictedId(restrictedId,"test",false);
-        RestrictedIdOutputDto outputRight = RightsModuleFacade.getRestrictedId(restrictedId.getIdValue(), "dr_produktions_id", "dr");
+        RestrictedIdOutputDto outputRight = RightsModuleFacade.getRestrictedId(restrictedId.getIdValue(), "dr_produktions_id", PlatformEnumDto.DRARKIV);
 
         assertEquals("1234664860", outputRight.getIdValue());
         RightsModuleFacade.deleteRestrictedId(restrictedId.getIdValue(),restrictedId.getIdType(), restrictedId.getPlatform(),"test",false);
@@ -120,12 +121,12 @@ public class RightsModuleIntegrationTest extends DsLicenseUnitTestUtil {
         RestrictedIdInputDto restrictedId = new RestrictedIdInputDto();
         restrictedId.setIdValue("1234664800");
         restrictedId.setIdType("dr_produktions_id");
-        restrictedId.setPlatform("dr");
+        restrictedId.setPlatform(PlatformEnumDto.DRARKIV);
         RightsModuleFacade.deleteRestrictedId(restrictedId.getIdValue(),restrictedId.getIdType(), restrictedId.getPlatform(),"test",false);
 
 
         RightsModuleFacade.createRestrictedId(restrictedId,"test",false);
-        RestrictedIdOutputDto outputRight = RightsModuleFacade.getRestrictedId(restrictedId.getIdValue(), "dr_produktions_id", "dr");
+        RestrictedIdOutputDto outputRight = RightsModuleFacade.getRestrictedId(restrictedId.getIdValue(), "dr_produktions_id", PlatformEnumDto.DRARKIV);
 
         assertEquals("1234664800", outputRight.getIdValue());
         RightsModuleFacade.deleteRestrictedId(restrictedId.getIdValue(),restrictedId.getIdType(), restrictedId.getPlatform(),"test",false);
@@ -137,12 +138,12 @@ public class RightsModuleIntegrationTest extends DsLicenseUnitTestUtil {
         RestrictedIdInputDto restrictedId = new RestrictedIdInputDto();
         restrictedId.setIdValue("1234664899");
         restrictedId.setIdType("dr_produktions_id");
-        restrictedId.setPlatform("dr");
+        restrictedId.setPlatform(PlatformEnumDto.DRARKIV);
         RightsModuleFacade.deleteRestrictedId(restrictedId.getIdValue(),restrictedId.getIdType(), restrictedId.getPlatform(),"test",false);
 
 
         RightsModuleFacade.createRestrictedId(restrictedId,"test",false);
-        RestrictedIdOutputDto outputRight = RightsModuleFacade.getRestrictedId(restrictedId.getIdValue(), "dr_produktions_id", "dr");
+        RestrictedIdOutputDto outputRight = RightsModuleFacade.getRestrictedId(restrictedId.getIdValue(), "dr_produktions_id", PlatformEnumDto.DRARKIV);
 
         assertEquals("1234664899", outputRight.getIdValue());
         RightsModuleFacade.deleteRestrictedId(restrictedId.getIdValue(),restrictedId.getIdType(), restrictedId.getPlatform(),"test",false);
