@@ -113,7 +113,7 @@
                 <configuration>
                     <tarLongFileMode>posix</tarLongFileMode>
                     <descriptors>
-                        <descriptor>ds-license-web/src/main/assembly/assembly.xml</descriptor>
+                        <descriptor>src/main/assembly/assembly.xml</descriptor>
                     </descriptors>
                 </configuration>
                 <executions>
