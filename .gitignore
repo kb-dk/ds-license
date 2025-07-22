@@ -7,11 +7,11 @@ target/
 .idea
 *.iml
 
-src/test/resources/rightsModuleMigratedData/*
+ds-license-web/src/test/resources/rightsModuleMigratedData/*
 README_OLD.md
 .openapi-generator/
-conf/ds-license-environment.yaml
-conf/ds-license-local.yaml
+ds-license-web/conf/ds-license-environment.yaml
+ds-license-web/conf/ds-license-local.yaml
 setup_project.sh
-/.openapi-generator-ignore
+/ds-license-api/.openapi-generator-ignore
 
