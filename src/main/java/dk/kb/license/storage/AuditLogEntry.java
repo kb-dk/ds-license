@@ -33,8 +33,6 @@ public class AuditLogEntry {
      * @param changeComment Optional custom comment that is tied to the ChangeName. The restricted ID method could log the id in this field.
      * @param textBefore The generated text from the business object before change.
      * @param textAfter  The generated text from the business object after change.
-     * 
-     * 
      */
     public AuditLogEntry(long objectId, String userName, ChangeTypeEnumDto changeType, ObjectTypeEnumDto changeName,
                     String changeComment, String textBefore, String textAfter) {        

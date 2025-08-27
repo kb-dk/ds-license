@@ -37,8 +37,6 @@ public class LicenseModuleFacade {
      * @param value_en This text (english) will be shown to end users. Keep it short.
      */
     public static long persistLicensePresentationType(String key, String value_dk, String value_en, HttpSession session) {
-
-
         Long objectId = BaseModuleStorage.performStorageAction("persistLicensePresentationType(" + key + "," + value_dk + "," + value_en + ")", LicenseModuleStorage.class, storage -> {
 
             PresentationType newType = new PresentationType(key, value_dk, value_en);
@@ -93,7 +91,6 @@ public class LicenseModuleFacade {
 
     
     /**
-
      * Create a new {@link GroupType}. The new GroupType will not be attached to any existing licenses.
      * <p>
      * A group type has to be one of the two types:  access-giving(pakke) or restriction(klausulering).
@@ -195,7 +192,7 @@ public class LicenseModuleFacade {
         BaseModuleStorage.performStorageAction("deleteLicenseGroupType(" + groupName + ")", LicenseModuleStorage.class, storage -> {
 
             long id = ((LicenseModuleStorage) storage).deleteLicenseGroupType(groupName);
-            AuditLogEntry auditLog = new AuditLogEntry(id, (String) session.getAttribute("oauth_user"), ChangeTypeEnumDto.DELETE, ObjectTypeEnumDto.GROUP_TYPE, groupName, groupName, "");
+            AuditLogEntry auditLog = new AuditLogEntry(id, (String) session.getAttribute("oauth_user"), ChangeTypeEnumDto.DELETE, ObjectTypeEnumDto.GROUP_TYPE, groupName, groupName, null);
             ((LicenseModuleStorage) storage).persistAuditLog(auditLog);
 
             return null;        
@@ -303,10 +300,10 @@ public class LicenseModuleFacade {
      * @param attributeTypeName The unique name of the AttributeType.
      *                          If the AttributeType is actively used by any licenses, it can not be deleted.
      */    
-    public static void deleteAttributeType(String attributeTypeName,HttpSession session) {
+    public static void deleteAttributeType(String attributeTypeName, HttpSession session) {
         BaseModuleStorage.performStorageAction("deleteAttributeType(" + attributeTypeName + ")", LicenseModuleStorage.class, storage -> {
             long id = ((LicenseModuleStorage) storage).deleteAttributeType(attributeTypeName);
-            AuditLogEntry auditLog = new AuditLogEntry(id, (String) session.getAttribute("oauth_user"), ChangeTypeEnumDto.DELETE, ObjectTypeEnumDto.ATTRIBUTE_NAME, attributeTypeName, attributeTypeName, "");
+            AuditLogEntry auditLog = new AuditLogEntry(id, (String) session.getAttribute("oauth_user"), ChangeTypeEnumDto.DELETE, ObjectTypeEnumDto.ATTRIBUTE_NAME, attributeTypeName, attributeTypeName, null);
             ((LicenseModuleStorage) storage).persistAuditLog(auditLog);
             return null;        
         });
