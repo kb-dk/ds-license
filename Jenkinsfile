@@ -2,7 +2,7 @@ pipeline {
     agent { label 'DS agent' }
 
     environment {
-        MVN_SETTINGS = '/etc/m2/settings.xml' //This should be changed in Jenkins config for the DS agent
+        MVN_SETTINGS = '/etc/m2/settings.xml' i
     }
 
     parameters {
