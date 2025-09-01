@@ -68,7 +68,7 @@ public class RightsModuleIntegrationTest extends DsLicenseUnitTestUtil {
 
         }
         catch(Exception e) {
-            log.warn("Could not retrieve keycloak access token. Service will be called without Bearer access token");
+            log.warn("Could not retrieve keycloak access token. Service will be called without Bearer access token ");
             e.printStackTrace();
         }
     }
