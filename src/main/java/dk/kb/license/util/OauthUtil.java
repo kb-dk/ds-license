@@ -21,7 +21,11 @@ import java.util.Map;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response.Status;
 
+import dk.kb.license.webservice.KBAuthorizationInterceptor;
+import org.apache.cxf.jaxrs.utils.JAXRSUtils;
+import org.apache.cxf.message.Message;
 import org.json.JSONObject;
+import org.keycloak.representations.AccessToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -232,6 +236,26 @@ public class OauthUtil {
     private static JWTVerifier buildJWTVerifier(String rsaPublicKeyBase64) throws Exception {
         var algo = Algorithm.RSA256(getRSAPublicKey(rsaPublicKeyBase64), null);
         return JWT.require(algo).build();
+    }
+
+    /**
+     * Gets the name of the current user from the OAuth token.
+     * @return
+     */
+    public static String getCurrentUsername(String username) {
+
+        Message message = JAXRSUtils.getCurrentMessage();
+        if (message == null) {
+            if (username == null) {
+                throw new IllegalArgumentException("No username or valid message provided");
+            }
+            return username;
+        }
+        AccessToken token = (AccessToken) message.get(KBAuthorizationInterceptor.ACCESS_TOKEN);
+        if (token != null && token.getName() != null) {
+            return token.getName();
+        }
+        throw new IllegalArgumentException("Invalid or no token provided");
     }
     
   }

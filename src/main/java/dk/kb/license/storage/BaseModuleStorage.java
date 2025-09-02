@@ -22,6 +22,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Date;
 
+import static dk.kb.license.util.OauthUtil.getCurrentUsername;
+
 /**
  * The BaseModuleStorage, which sets up the connection to the database which is then used by  {@link LicenseModuleStorage} and {@link RightsModuleStorage}.
  * This class only sets up the connection, while the other two are responsible for implementing the interactions with the database.
@@ -354,25 +356,5 @@ public abstract class BaseModuleStorage implements AutoCloseable  {
         auditEntry.setTextAfter(textAfter);
         auditEntry.setTextBefore(textBefore);
         return auditEntry;
-    }
-
-    /**
-     * Gets the name of the current user from the OAuth token.
-     * @return
-     */
-    private static String getCurrentUsername(String username) {
-
-        Message message = JAXRSUtils.getCurrentMessage();
-        if (message == null) {
-            if (username == null) {
-                throw new IllegalArgumentException("No username or valid message provided");
-            }
-            return username;
-        }
-        AccessToken token = (AccessToken) message.get(KBAuthorizationInterceptor.ACCESS_TOKEN);
-        if (token != null && token.getName() != null) {
-            return token.getName();
-        }
-        throw new IllegalArgumentException("Invalid or no token provided");
     }
 }
