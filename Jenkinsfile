@@ -55,7 +55,7 @@ pipeline {
         }
 
         stage('Build') {
-            when { expression { params.Build == true && env.BRANCH_NAME ==~ "master|release_v[0-9]+|PR-[0-9]+"} }
+            when { expression { params.Build == true && (env.BRANCH_NAME ==~ "master|release_v[0-9]+|PR-[0-9]+" || env.PR_ID ==~ "PR-[0-9]+")} }
             steps {
                 script {
 
