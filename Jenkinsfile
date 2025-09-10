@@ -39,14 +39,19 @@ pipeline {
                 expression { env.BRANCH_NAME ==~ 'PR-[0-9]+' || env.PR_ID ==~ 'PR-[0-9]+' }
             }
             steps {
-                    script {
-                        sh "mvn -s ${env.MVN_SETTINGS} versions:set -DnewVersion=${env.BRANCH_NAME}-ds-license-SNAPSHOT"
-                        if ( env.PR_ID ==~ 'PR-[0-9]+'){ // Not relevant for ds-storage / ds-kaltura
-                            "mvn -s ${env.MVN_SETTINGS} versions:use-dep-version -Dincludes=dk.kb.storage:* -DdepVersion=${env.PR_ID}-${env.TRIGGERED_BY} -DforceVersion=true"
+                                script {
+                                    if ( env.BRANCH_NAME ==~ 'PR-[0-9]+' ){
+                                        sh "mvn -s ${env.MVN_SETTINGS} versions:set -DnewVersion=${env.BRANCH_NAME}-ds-license-SNAPSHOT"
+                                    }
+
+                                    if ( env.PR_ID ==~ 'PR-[0-9]+'){ // Not relevant for ds-storage / ds-kaltura
+                                        sh "mvn -s ${env.MVN_SETTINGS} versions:set -DnewVersion=${env.PR_ID}-ds-license-SNAPSHOT"
+                                        sh "mvn -s ${env.MVN_SETTINGS} versions:use-dep-version -Dincludes=dk.kb.storage:* -DdepVersion=${env.PR_ID}-${env.TRIGGERED_BY} -DforceVersion=true"
+                                        //remove hardcoded storage above
+                                    }
+                                    echo "Changing MVN version to ${env.BRANCH_NAME}-ds-storage-SNAPSHOT"
+                                }
                         }
-                        echo "Changing MVN version to ${env.BRANCH_NAME}-ds-license-SNAPSHOT"
-                    }
-            }
         }
 
         stage('Build') {
