@@ -53,10 +53,10 @@ pipeline {
             }
             steps {
                 script {
-                    sh "mvn -s ${env.MVN_SETTINGS} versions:set -DnewVersion=${env.TRIGGERED_BY}-${env.PR_ID}-${env.PROJECT}-SNAPSHOT"
+                    sh "mvn -s ${env.MVN_SETTINGS} versions:set -DnewVersion=${env.PR_ID}-${env.TRIGGERED_BY}-${env.PROJECT}-SNAPSHOT"
                     sh "mvn -s ${env.MVN_SETTINGS} versions:use-dep-version -Dincludes=*:${env.TRIGGERED_BY}:* -DdepVersion=${env.PR_ID}-${env.TRIGGERED_BY}-SNAPSHOT -DforceVersion=true"
 
-                    echo "Changing MVN version to: ${env.TRIGGERED_BY}-${env.PR_ID}-${env.PROJECT}-SNAPSHOT"
+                    echo "Changing MVN version to: ${env.PR_ID}-${env.TRIGGERED_BY}-${env.PROJECT}-SNAPSHOT"
                     echo "Changing MVN dependency storage to: ${env.PR_ID}-${env.TRIGGERED_BY}-SNAPSHOT"
                 }
             }
@@ -100,7 +100,8 @@ pipeline {
                     def result = build job: "DS-GitHub/${env.BUILD_TO_TRIGGER}/${env.TARGET_BRANCH}",
                         parameters: [
                             string(name: 'PR_ID', value: env.BRANCH_NAME),
-                            string(name: 'TRIGGERED_BY', value: env.TRIGGERED_BY),
+                            string(name: 'ORIGINAL_JOB', value: env.TRIGGERED_BY),
+                            string(name: 'TRIGGERED_BY', value: env.PROJECT),
                             string(name: 'TARGET_BRANCH', value: env.CHANGE_TARGET)
                         ]
                         wait: true // Wait for the pipeline to finish
