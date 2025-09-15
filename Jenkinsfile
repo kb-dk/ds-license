@@ -84,7 +84,7 @@ pipeline {
 
         stage('Trigger License Build') {
             when {
-                expression { params.Build == true && currentBuild.result == null && env.BRANCH_NAME ==~ "PR-[0-9]+" }
+                expression { params.Build == true && currentBuild.result == null && (env.BRANCH_NAME ==~ "PR-[0-9]+" || env.PR_ID==~ "PR-[0-9]+") }
             }
             steps {
                 script {
