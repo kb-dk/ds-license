@@ -14,6 +14,7 @@ pipeline {
             booleanParam(name: 'Build', defaultValue: true, description: 'Perform mvn package')
             string(name: 'PR_ID', defaultValue: 'NOT_A_PR', description: 'NOT_A_PR if not part of PR and otherwise the name of the first outer most job og the PR')
             string(name: 'TRIGGERED_BY', defaultValue: 'GITHUB_EVENT', description: 'GITHUB_EVENT if top-most job')
+            booleanParam(name: 'Use_Custom_Storage', defaultValue: false, description: 'True if ds-storage is part of BPPR flow')
     }
 
     stages {
@@ -31,6 +32,7 @@ pipeline {
                 echo "Build: ${env.Build}"
                 echo "PR_ID: ${env.PR_ID}"
                 echo "TRIGGERED_BY: ${env.TRIGGERED_BY}"
+                echo "Use_Custom_Storage: ${env.TRIGGERED_BY}"
             }
         }
 
@@ -42,14 +44,19 @@ pipeline {
                                 script {
                                     if ( env.BRANCH_NAME ==~ 'PR-[0-9]+' ){
                                         sh "mvn -s ${env.MVN_SETTINGS} versions:set -DnewVersion=${env.BRANCH_NAME}-ds-license-SNAPSHOT"
+                                        echo "Changing MVN version to ${env.BRANCH_NAME}-ds-license-SNAPSHOT"
                                     }
 
-                                    if ( env.PR_ID ==~ 'PR-[0-9]+'){ // Not relevant for ds-storage / ds-kaltura
-                                        sh "mvn -s ${env.MVN_SETTINGS} versions:set -DnewVersion=${env.PR_ID}-ds-license-SNAPSHOT"
-                                        sh "mvn -s ${env.MVN_SETTINGS} versions:use-dep-version -Dincludes=dk.kb.storage:* -DdepVersion=${env.PR_ID}-${env.TRIGGERED_BY}-SNAPSHOT -DforceVersion=true"
+                                    else if ( env.PR_ID ==~ 'PR-[0-9]+'){ // Not relevant for ds-storage / ds-kaltura
+
+                                        sh "mvn -s ${env.MVN_SETTINGS} versions:set -DnewVersion=ds-storage-${env.PR_ID}-ds-license-SNAPSHOT"
+                                        sh "mvn -s ${env.MVN_SETTINGS} versions:use-dep-version -Dincludes=dk.kb.storage:* -DdepVersion=${env.PR_ID}-ds-storage-SNAPSHOT -DforceVersion=true"
                                         //remove hardcoded storage above
+                                        echo "Changing MVN version to ds-storage-${env.PR_ID}-ds-license-SNAPSHOT"
+                                        echo "Changing MVN dependency storage to ${env.PR_ID}-ds-storage-SNAPSHOT"
+
                                     }
-                                    echo "Changing MVN version to ${env.BRANCH_NAME}-ds-storage-SNAPSHOT"
+
                                 }
                         }
         }
