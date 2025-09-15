@@ -13,8 +13,8 @@ pipeline {
     parameters {
             booleanParam(name: 'Build', defaultValue: true, description: 'Perform mvn package')
             string(name: 'PR_ID', defaultValue: 'NOT_A_PR', description: 'NOT_A_PR if not part of PR and otherwise the name of the first outer most job og the PR')
-            string(name: 'TRIGGERED_BY', defaultValue: 'GITHUB_EVENT', description: 'GITHUB_EVENT if top-most job')
-            booleanParam(name: 'Use_Custom_Storage', defaultValue: false, description: 'True if ds-storage is part of BPPR flow')
+            string(name: 'TRIGGERED_BY', defaultValue: 'ds-license', description: 'GITHUB_EVENT if top-most job')
+            string(name: 'TARGET_BRANCH', defaultValue: "${env.CHANGE_TARGET}", description: 'Target branch for PR')
     }
 
     stages {
@@ -32,7 +32,7 @@ pipeline {
                 echo "Build: ${env.Build}"
                 echo "PR_ID: ${env.PR_ID}"
                 echo "TRIGGERED_BY: ${env.TRIGGERED_BY}"
-                echo "Use_Custom_Storage: ${env.TRIGGERED_BY}"
+                echo "TARGET_BRANCH: ${env.TARGET_BRANCH}"
             }
         }
 
@@ -75,10 +75,29 @@ pipeline {
         stage('Push to Nexus') {
             when {
                 // Check if Build was successful
-                expression { params.Build == true && currentBuild.result == null && env.BRANCH_NAME ==~ "master|release_v[0-9]+|PR-[0-9]+"}
+                expression { params.Build == true && currentBuild.result == null && env.BRANCH_NAME ==~ "master|release_v[0-9]+|PR-[0-9]+|DRA-2011_Jenkins_build"}
             }
             steps {
                 sh "mvn -s ${env.MVN_SETTINGS} clean deploy -DskipTests=true" // Kan vi skippe build let
+            }
+        }
+
+        stage('Trigger License Build') {
+            when {
+                expression { params.Build == true && currentBuild.result == null && env.BRANCH_NAME ==~ "PR-[0-9]+" }
+            }
+            steps {
+                script {
+                    echo "Triggering: DS-GitHub/ds-license/${env.TARGET_BRANCH}"
+                    def result = build job: "DS-GitHub/ds-present/${env.TARGET_BRANCH}",
+                        parameters: [
+                        string(name: 'PR_ID', value: env.BRANCH_NAME),
+                        string(name: 'TRIGGERED_BY', value: env.TRIGGERED_BY),
+                        string(name: 'TARGET_BRANCH', value: env.CHANGE_TARGET)
+                        ]
+                        wait: true // Wait for the pipeline to finish
+                    echo "Child Pipeline Result: ${result}"
+                }
             }
         }
 
