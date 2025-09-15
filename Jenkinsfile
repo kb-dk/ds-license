@@ -88,7 +88,7 @@ pipeline {
             }
         }
 
-        stage('Trigger License Build') {
+        stage('Trigger Present Build') {
             when {
                 expression {
                     currentBuild.currentResult == "SUCCESS" && (env.BRANCH_NAME ==~ "PR-[0-9]+" || env.PR_ID==~ "PR-[0-9]+")
