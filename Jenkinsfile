@@ -7,9 +7,6 @@ pipeline {
         MVN_SETTINGS = '/etc/m2/settings.xml' //This should be changed in Jenkins config for the DS agent
         PROJECT = 'ds-license'
         PROJECT_VERSION = "${env.BRANCH_NAME}-${env.ORIGINAL_JOB}-${env.PROJECT}-SNAPSHOT"
-        if( env.PR_ID ==~ "PR-[0-9]+" ) {
-            PROJECT_VERSION = "${env.PR_ID}-${env.ORIGINAL_JOB}-${env.PROJECT}-SNAPSHOT"
-        }
         BUILD_TO_TRIGGER = 'ds-present'
     }
 
@@ -42,6 +39,9 @@ pipeline {
             }
             steps {
                 script {
+                    if( env.PR_ID ==~ "PR-[0-9]+" ) {
+                        PROJECT_VERSION = "${env.PR_ID}-${env.ORIGINAL_JOB}-${env.PROJECT}-SNAPSHOT"
+                    }
                     sh "mvn -s ${env.MVN_SETTINGS} versions:set -DnewVersion=${env.PROJECT_VERSION}"
                     echo "Changing MVN version to: ${env.PROJECT_VERSION}"
                 }
