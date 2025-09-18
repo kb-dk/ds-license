@@ -40,7 +40,7 @@ pipeline {
             steps {
                 script {
                     if( env.PR_ID ==~ "PR-[0-9]+" ) {
-                        PROJECT_VERSION = "${env.PR_ID}-${env.ORIGINAL_JOB}-${env.PROJECT}-SNAPSHOT"
+                        env.PROJECT_VERSION = "${env.PR_ID}-${env.ORIGINAL_JOB}-${env.PROJECT}-SNAPSHOT"
                     }
                     sh "mvn -s ${env.MVN_SETTINGS} versions:set -DnewVersion=${env.PROJECT_VERSION}"
                     echo "Changing MVN version to: ${env.PROJECT_VERSION}"
