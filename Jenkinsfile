@@ -15,9 +15,9 @@ pipeline {
     }
 
     parameters {
-        string(name: 'ORIGINAL_BRANCH', defaultValue: "${env.BRANCH_NAME}", description: 'NOT_A_PR if not part of PR and otherwise the name of the first outer most job og the PR')
+        string(name: 'ORIGINAL_BRANCH', defaultValue: "${env.BRANCH_NAME}", description: 'Branch of first job to run, will also be PI_ID for a PR')
         string(name: 'ORIGINAL_JOB', defaultValue: "${env.PROJECT}", description: 'Top-most job')
-        string(name: 'TARGET_BRANCH', defaultValue: "${env.CHANGE_TARGET}", description: 'Target branch for PR')
+        string(name: 'TARGET_BRANCH', defaultValue: "${env.CHANGE_TARGET}", description: 'Target branch if PR')
     }
 
     stages {
