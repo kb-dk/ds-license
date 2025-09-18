@@ -6,7 +6,7 @@ pipeline {
     environment {
         MVN_SETTINGS = '/etc/m2/settings.xml' //This should be changed in Jenkins config for the DS agent
         PROJECT = 'ds-license'
-        PROJECT_VERSION = "${env.BRANCH_NAME}-${env.ORIGINAL_JOB}-${env.PROJECT}-SNAPSHOT"
+        PROJECT_VERSION = "${env.ORIGINAL_BRANCH}-${env.ORIGINAL_JOB}-${env.PROJECT}-SNAPSHOT"
         BUILD_TO_TRIGGER = 'ds-present'
     }
 
@@ -16,7 +16,7 @@ pipeline {
     }
 
     parameters {
-        string(name: 'PR_ID', defaultValue: 'NOT_A_PR', description: 'NOT_A_PR if not part of PR and otherwise the name of the first outer most job og the PR')
+        string(name: 'ORIGINAL_BRANCH', defaultValue: "${env.BRANCH_NAME}", description: 'NOT_A_PR if not part of PR and otherwise the name of the first outer most job og the PR')
         string(name: 'ORIGINAL_JOB', defaultValue: "${env.PROJECT}", description: 'Top-most job')
         string(name: 'TARGET_BRANCH', defaultValue: "${env.CHANGE_TARGET}", description: 'Target branch for PR')
     }
@@ -24,8 +24,10 @@ pipeline {
     stages {
         stage('Echo Environment Variables') {
             steps {
-                echo "PR_ID: ${env.PR_ID}"
+                echo "ORIGINAL_BRANCH: ${env.ORIGINAL_BRANCH}"
                 echo "PROJECT: ${env.PROJECT}"
+                echo "PROJECT_VERSION: ${env.PROJECT_VERSION}"
+                echo "BUILD_TO_TRIGGER: ${env.BUILD_TO_TRIGGER}"
                 echo "ORIGINAL_JOB: ${env.ORIGINAL_JOB}"
                 echo "TARGET_BRANCH: ${env.TARGET_BRANCH}"
             }
@@ -34,14 +36,11 @@ pipeline {
         stage('Change version if part of PR') {
             when {
                 expression {
-                    env.BRANCH_NAME ==~ "PR-[0-9]+" || env.PR_ID ==~ "PR-[0-9]+"
+                    env.ORIGINAL_BRANCH ==~ "PR-[0-9]+"
                 }
             }
             steps {
                 script {
-                    if( env.PR_ID ==~ "PR-[0-9]+" ) {
-                        env.PROJECT_VERSION = "${env.PR_ID}-${env.ORIGINAL_JOB}-${env.PROJECT}-SNAPSHOT"
-                    }
                     sh "mvn -s ${env.MVN_SETTINGS} versions:set -DnewVersion=${env.PROJECT_VERSION}"
                     echo "Changing MVN version to: ${env.PROJECT_VERSION}"
                 }
@@ -51,24 +50,20 @@ pipeline {
         stage('Change dependencies') {
             when {
                 expression {
-                    env.PR_ID ==~ "PR-[0-9]+"
+                    env.ORIGINAL_BRANCH ==~ "PR-[0-9]+"
                 }
             }
             steps {
                 script {
-                    sh "mvn -s ${env.MVN_SETTINGS} versions:use-dep-version -Dincludes=dk.kb.storage:* -DdepVersion=${env.PR_ID}-${env.ORIGINAL_JOB}-ds-storage-SNAPSHOT -DforceVersion=true"
-
-                    echo "Changing MVN dependency storage to: ${env.PR_ID}-${env.ORIGINAL_JOB}-ds-storage-SNAPSHOT"
+                    if ( env.ORIGINAL_JOB == 'ds-storage' ) {
+                        sh "mvn -s ${env.MVN_SETTINGS} versions:use-dep-version -Dincludes=dk.kb.storage:* -DdepVersion=${env.ORIGINAL_BRANCH}-${env.ORIGINAL_JOB}-ds-storage-SNAPSHOT -DforceVersion=true"
+                        echo "Changing MVN dependency storage to: ${env.ORIGINAL_BRANCH}-${env.ORIGINAL_JOB}-ds-storage-SNAPSHOT"
+                    }
                 }
             }
         }
 
         stage('Build') {
-            when {
-                expression {
-                    env.BRANCH_NAME ==~ "master|release_v[0-9]+|PR-[0-9]+" || env.PR_ID ==~ "PR-[0-9]+"
-                }
-            }
             steps {
                 script {
                     // Execute Maven build
@@ -81,37 +76,28 @@ pipeline {
             when {
                 // Check if Build was successful
                 expression {
-                    currentBuild.currentResult == "SUCCESS" && env.BRANCH_NAME ==~ "master|release_v[0-9]+|PR-[0-9]+|DRA-2011_Jenkins_build"
+                    currentBuild.currentResult == "SUCCESS" && env.ORIGINAL_BRANCH ==~ "master|release_v[0-9]+|PR-[0-9]+"
                 }
             }
             steps {
-                sh "mvn -s ${env.MVN_SETTINGS} clean deploy -DskipTests=true" // Kan vi skippe build let
+                sh "mvn -s ${env.MVN_SETTINGS} clean deploy -DskipTests=true"
             }
         }
 
         stage('Trigger Present Build') {
             when {
                 expression {
-                    currentBuild.currentResult == "SUCCESS" && (env.BRANCH_NAME ==~ "master|release_v[0-9]+|PR-[0-9]+" || env.PR_ID ==~ "PR-[0-9]+")
+                    currentBuild.currentResult == "SUCCESS" && env.ORIGINAL_BRANCH ==~ "master|release_v[0-9]+|PR-[0-9]+"
                 }
             }
             steps {
                 script {
+                    if ( env.ORIGINAL_BRANCH ==~ "PR-[0-9]+" ) {
+                        echo "Triggering: DS-GitHub/${env.BUILD_TO_TRIGGER}/${env.TARGET_BRANCH}"
 
-                    echo "Triggering: DS-GitHub/${env.BUILD_TO_TRIGGER}/${env.TARGET_BRANCH}"
-                    if ( env.PR_ID ==~ "PR-[0-9]+" ) {
                         def result = build job: "DS-GitHub/${env.BUILD_TO_TRIGGER}/${env.TARGET_BRANCH}",
                         parameters: [
-                            string(name: 'PR_ID', value: env.PR_ID),
-                            string(name: 'ORIGINAL_JOB', value: env.ORIGINAL_JOB),
-                            string(name: 'TARGET_BRANCH', value: env.CHANGE_TARGET)
-                        ]
-                        wait: true // Wait for the pipeline to finish
-                    }
-                    else if ( env.BRANCH_NAME ==~ "PR-[0-9]+" ){
-                        def result = build job: "DS-GitHub/${env.BUILD_TO_TRIGGER}/${env.TARGET_BRANCH}",
-                        parameters: [
-                            string(name: 'PR_ID', value: env.BRANCH_NAME),
+                            string(name: 'ORIGINAL_BRANCH', value: env.ORIGINAL_BRANCH),
                             string(name: 'ORIGINAL_JOB', value: env.ORIGINAL_JOB),
                             string(name: 'TARGET_BRANCH', value: env.CHANGE_TARGET)
                         ]
@@ -119,16 +105,11 @@ pipeline {
                     }
 
                     else if ( env.BRANCH_NAME ==~ "master|release_v[0-9]+" ){
-//                         def result = build job: "DS-GitHub/${env.BUILD_TO_TRIGGER}/${env.TARGET_BRANCH}",
-//                         parameters: [
-//                             string(name: 'PR_ID', value: env.BRANCH_NAME),
-//                             string(name: 'ORIGINAL_JOB', value: env.ORIGINAL_JOB),
-//                             string(name: 'TARGET_BRANCH', value: env.CHANGE_TARGET)
-//                         ]
-                        //wait: true // Wait for the pipeline to finish
-                        echo "implement later"
-                    }
+                        echo "Triggering: DS-GitHub/${env.BUILD_TO_TRIGGER}/${env.BRANCH_NAME}"
 
+                        def result = build job: "DS-GitHub/${env.BUILD_TO_TRIGGER}/${env.BRANCH_NAME}"
+                        wait: true // Wait for the pipeline to finish
+                    }
                     echo "Child Pipeline Result: ${result}"
                 }
             }
