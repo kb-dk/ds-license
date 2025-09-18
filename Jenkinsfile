@@ -102,10 +102,10 @@ pipeline {
                         wait: true // Wait for the pipeline to finish
                     }
 
-                    else if ( env.BRANCH_NAME ==~ "master|release_v[0-9]+" ){
-                        echo "Triggering: DS-GitHub/${env.BUILD_TO_TRIGGER}/${env.BRANCH_NAME}"
+                    else if ( env.ORIGINAL_BRANCH ==~ "master|release_v[0-9]+" ){
+                        echo "Triggering: DS-GitHub/${env.BUILD_TO_TRIGGER}/${env.ORIGINAL_BRANCH}"
 
-                        def result = build job: "DS-GitHub/${env.BUILD_TO_TRIGGER}/${env.BRANCH_NAME}"
+                        def result = build job: "DS-GitHub/${env.BUILD_TO_TRIGGER}/${env.ORIGINAL_BRANCH}"
                         wait: true // Wait for the pipeline to finish
                     }
                     echo "Child Pipeline Result: ${result}"
