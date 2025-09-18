@@ -97,7 +97,7 @@ pipeline {
                         parameters: [
                             string(name: 'ORIGINAL_BRANCH', value: env.ORIGINAL_BRANCH),
                             string(name: 'ORIGINAL_JOB', value: env.ORIGINAL_JOB),
-                            string(name: 'TARGET_BRANCH', value: env.CHANGE_TARGET)
+                            string(name: 'TARGET_BRANCH', value: env.TARGET_BRANCH)
                         ]
                         wait: true // Wait for the pipeline to finish
                     }
