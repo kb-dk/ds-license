@@ -6,7 +6,6 @@ pipeline {
     environment {
         MVN_SETTINGS = '/etc/m2/settings.xml' //This should be changed in Jenkins config for the DS agent
         PROJECT = 'ds-license'
-        PROJECT_VERSION = "${env.ORIGINAL_BRANCH}-${env.ORIGINAL_JOB}-${env.PROJECT}-SNAPSHOT"
         BUILD_TO_TRIGGER = 'ds-present'
     }
 
@@ -26,9 +25,8 @@ pipeline {
             steps {
                 echo "ORIGINAL_BRANCH: ${env.ORIGINAL_BRANCH}"
                 echo "PROJECT: ${env.PROJECT}"
-                echo "PROJECT_VERSION: ${env.PROJECT_VERSION}"
-                echo "BUILD_TO_TRIGGER: ${env.BUILD_TO_TRIGGER}"
                 echo "ORIGINAL_JOB: ${env.ORIGINAL_JOB}"
+                echo "BUILD_TO_TRIGGER: ${env.BUILD_TO_TRIGGER}"
                 echo "TARGET_BRANCH: ${env.TARGET_BRANCH}"
             }
         }
@@ -41,8 +39,8 @@ pipeline {
             }
             steps {
                 script {
-                    sh "mvn -s ${env.MVN_SETTINGS} versions:set -DnewVersion=${env.PROJECT_VERSION}"
-                    echo "Changing MVN version to: ${env.PROJECT_VERSION}"
+                    sh "mvn -s ${env.MVN_SETTINGS} versions:set -DnewVersion=${env.ORIGINAL_BRANCH}-${env.ORIGINAL_JOB}-${env.PROJECT}-SNAPSHOT"
+                    echo "Changing MVN version to: ${env.ORIGINAL_BRANCH}-${env.ORIGINAL_JOB}-${env.PROJECT}-SNAPSHOT"
                 }
             }
         }
