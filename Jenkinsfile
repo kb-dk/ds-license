@@ -89,19 +89,43 @@ pipeline {
         stage('Trigger Present Build') {
             when {
                 expression {
-                    currentBuild.currentResult == "SUCCESS" && (env.BRANCH_NAME ==~ "PR-[0-9]+" || env.PR_ID==~ "PR-[0-9]+")
+                    currentBuild.currentResult == "SUCCESS" && (env.BRANCH_NAME ==~ "master|release_v[0-9]+|PR-[0-9]+" || env.PR_ID ==~ "PR-[0-9]+")
                 }
             }
             steps {
                 script {
+
                     echo "Triggering: DS-GitHub/${env.BUILD_TO_TRIGGER}/${env.TARGET_BRANCH}"
-                    def result = build job: "DS-GitHub/${env.BUILD_TO_TRIGGER}/${env.TARGET_BRANCH}",
+                    if ( env.PR_ID ==~ "PR-[0-9]+" ) {
+                        def result = build job: "DS-GitHub/${env.BUILD_TO_TRIGGER}/${env.TARGET_BRANCH}",
+                        parameters: [
+                            string(name: 'PR_ID', value: env.PR_ID),
+                            string(name: 'ORIGINAL_JOB', value: env.ORIGINAL_JOB),
+                            string(name: 'TARGET_BRANCH', value: env.CHANGE_TARGET)
+                        ]
+                        wait: true // Wait for the pipeline to finish
+                    }
+                    else if ( env.BRANCH_NAME ==~ "PR-[0-9]+" ){
+                        def result = build job: "DS-GitHub/${env.BUILD_TO_TRIGGER}/${env.TARGET_BRANCH}",
                         parameters: [
                             string(name: 'PR_ID', value: env.BRANCH_NAME),
                             string(name: 'ORIGINAL_JOB', value: env.ORIGINAL_JOB),
                             string(name: 'TARGET_BRANCH', value: env.CHANGE_TARGET)
                         ]
                         wait: true // Wait for the pipeline to finish
+                    }
+
+                    else if ( env.BRANCH_NAME ==~ "master|release_v[0-9]+" ){
+//                         def result = build job: "DS-GitHub/${env.BUILD_TO_TRIGGER}/${env.TARGET_BRANCH}",
+//                         parameters: [
+//                             string(name: 'PR_ID', value: env.BRANCH_NAME),
+//                             string(name: 'ORIGINAL_JOB', value: env.ORIGINAL_JOB),
+//                             string(name: 'TARGET_BRANCH', value: env.CHANGE_TARGET)
+//                         ]
+                        //wait: true // Wait for the pipeline to finish
+                        echo "implement later"
+                    }
+
                     echo "Child Pipeline Result: ${result}"
                 }
             }
