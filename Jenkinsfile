@@ -83,6 +83,7 @@ pipeline {
         }
 
         stage('Trigger Present Build') {
+        agent none
             when {
                 expression {
                     currentBuild.currentResult == "SUCCESS" && env.ORIGINAL_BRANCH ==~ "master|release_v[0-9]+|PR-[0-9]+"
