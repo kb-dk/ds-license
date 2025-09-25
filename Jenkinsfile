@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label 'DS agent'
-    }
+    agent none
 
     environment {
         MVN_SETTINGS = '/etc/m2/settings.xml' //This should be changed in Jenkins config for the DS agent
@@ -22,6 +20,10 @@ pipeline {
 
     stages {
         stage('Echo Environment Variables') {
+            agent {
+                label 'DS agent'
+            }
+
             steps {
                 echo "ORIGINAL_BRANCH: ${env.ORIGINAL_BRANCH}"
                 echo "PROJECT: ${env.PROJECT}"
@@ -32,6 +34,10 @@ pipeline {
         }
 
         stage('Change version if part of PR') {
+            agent {
+                label 'DS agent'
+            }
+
             when {
                 expression {
                     env.ORIGINAL_BRANCH ==~ "PR-[0-9]+"
@@ -46,6 +52,10 @@ pipeline {
         }
 
         stage('Change dependencies') {
+            agent {
+                label 'DS agent'
+            }
+
             when {
                 expression {
                     env.ORIGINAL_BRANCH ==~ "PR-[0-9]+"
@@ -62,6 +72,10 @@ pipeline {
         }
 
         stage('Build') {
+            agent {
+                label 'DS agent'
+            }
+
             steps {
                 script {
                     // Execute Maven build
@@ -71,6 +85,10 @@ pipeline {
         }
 
         stage('Push to Nexus') {
+            agent {
+                label 'DS agent'
+            }
+
             when {
                 // Check if Build was successful
                 expression {
@@ -83,7 +101,6 @@ pipeline {
         }
 
         stage('Trigger Present Build') {
-        agent none
             when {
                 expression {
                     currentBuild.currentResult == "SUCCESS" && env.ORIGINAL_BRANCH ==~ "master|release_v[0-9]+|PR-[0-9]+"
