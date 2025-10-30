@@ -4,7 +4,7 @@ import dk.kb.license.config.ServiceConfig;
 import dk.kb.license.model.v1.*;
 import dk.kb.license.solr.SolrServerClient;
 import dk.kb.license.storage.BaseModuleStorage;
-import dk.kb.license.storage.DsLicenseUnitTestUtil;
+import dk.kb.license.storage.UnitTestUtil;
 import dk.kb.license.storage.RightsModuleStorageForUnitTest;
 import dk.kb.license.util.H2DbUtil;
 import dk.kb.license.webservice.KBAuthorizationInterceptor;
@@ -37,7 +37,7 @@ import java.util.Locale;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class DsRightsFacadeTest extends DsLicenseUnitTestUtil {
+public class RightsModuleFacadeTest extends UnitTestUtil {
     protected static RightsModuleStorageForUnitTest storage = null;
 
     final String drHoldBackValue = "2.02";
@@ -49,14 +49,14 @@ public class DsRightsFacadeTest extends DsLicenseUnitTestUtil {
     DrHoldbackRangesDto drHoldbackRangesDtoOne = new DrHoldbackRangesDto();
     DrHoldbackRangesDto drHoldbackRangesDtoTwo = new DrHoldbackRangesDto();
 
-    ArrayList<AuditEntryOutputDto> auditLogEntriesForObject;
+    ArrayList<AuditLogEntryOutputDto> auditLogEntriesForObject;
 
     static MockedStatic<JAXRSUtils> mocked;
 
     @BeforeAll
     public static void beforeClass() throws IOException, SQLException {
         ServiceConfig.initialize("conf/ds-license*.yaml");
-        H2DbUtil.createEmptyH2DBFromDDL(URL, DRIVER, USERNAME, PASSWORD, List.of("ddl/rightsmodule_create_h2_unittest.ddl"));
+        H2DbUtil.createEmptyH2DBFromDDL(URL, DRIVER, USERNAME, PASSWORD, List.of("ddl/rightsmodule_create_h2_unittest.ddl", "ddl/audit_log_module_create_h2_unittest.ddl"));
         BaseModuleStorage.initialize(DRIVER, URL, USERNAME, PASSWORD);
 
         storage = new RightsModuleStorageForUnitTest();
@@ -422,13 +422,14 @@ public class DsRightsFacadeTest extends DsLicenseUnitTestUtil {
         auditLogEntriesForObject = storage.getAuditLogByObjectId(drHoldbackRuleId);
 
         assertEquals(1, auditLogEntriesForObject.size());
-        AuditEntryOutputDto createDrHoldbackRuleAuditLog = auditLogEntriesForObject.get(0);
+        AuditLogEntryOutputDto createDrHoldbackRuleAuditLog = auditLogEntriesForObject.get(0);
         assertEquals(ChangeTypeEnumDto.CREATE, createDrHoldbackRuleAuditLog.getChangeType());
         assertEquals(ObjectTypeEnumDto.HOLDBACK_RULE, createDrHoldbackRuleAuditLog.getChangeName());
         assertNull(createDrHoldbackRuleAuditLog.getTextBefore());
         assertEquals(drHoldbackRuleInputDto.toString(), createDrHoldbackRuleAuditLog.getTextAfter());
         assertEquals(userName, createDrHoldbackRuleAuditLog.getUserName());
-        assertEquals(drHoldbackRuleInputDto.getDrHoldbackValue(), createDrHoldbackRuleAuditLog.getChangeComment());
+        assertEquals(drHoldbackRuleInputDto.getDrHoldbackValue(), createDrHoldbackRuleAuditLog.getIdentifier());
+        assertNull(createDrHoldbackRuleAuditLog.getChangeComment());
         assertEquals(drHoldbackRuleId, createDrHoldbackRuleAuditLog.getObjectId());
     }
 
@@ -453,15 +454,17 @@ public class DsRightsFacadeTest extends DsLicenseUnitTestUtil {
 
             auditLogEntriesForObject = storage.getAuditLogByObjectId(drHoldBackRangesId);
             assertEquals(1, auditLogEntriesForObject.size());
-            AuditEntryOutputDto createDrHoldbackRangeAuditLog = auditLogEntriesForObject.get(0);
 
+            AuditLogEntryOutputDto createDrHoldbackRangeAuditLog = auditLogEntriesForObject.get(0);
+
+            assertEquals(drHoldBackRangesId, createDrHoldbackRangeAuditLog.getObjectId());
             assertEquals(ChangeTypeEnumDto.CREATE, createDrHoldbackRangeAuditLog.getChangeType());
             assertEquals(ObjectTypeEnumDto.HOLDBACK_RANGE, createDrHoldbackRangeAuditLog.getChangeName());
+            assertEquals(userName, createDrHoldbackRangeAuditLog.getUserName());
+            assertEquals(drHoldbackRangeInputDto.getDrHoldbackValue(), createDrHoldbackRangeAuditLog.getIdentifier());
+            assertNull(createDrHoldbackRangeAuditLog.getChangeComment());
             assertNull(createDrHoldbackRangeAuditLog.getTextBefore());
             assertEquals(ranges.toString(), createDrHoldbackRangeAuditLog.getTextAfter());
-            assertEquals(userName, createDrHoldbackRangeAuditLog.getUserName());
-            assertEquals(drHoldbackRangeInputDto.getDrHoldbackValue(), createDrHoldbackRangeAuditLog.getChangeComment());
-            assertEquals(drHoldBackRangesId, createDrHoldbackRangeAuditLog.getObjectId());
         }
     }
 
@@ -476,14 +479,17 @@ public class DsRightsFacadeTest extends DsLicenseUnitTestUtil {
         RightsModuleFacade.updateDrHoldbackDaysFromDrHoldbackValue(drHoldBackValue, newDrHoldbackDays);
         auditLogEntriesForObject = storage.getAuditLogByObjectId(drHoldbackRuleId);
         assertEquals(2, auditLogEntriesForObject.size());
-        AuditEntryOutputDto updateDrHoldbackRuleAuditLogFromValue = auditLogEntriesForObject.get(0);
+
+        AuditLogEntryOutputDto updateDrHoldbackRuleAuditLogFromValue = auditLogEntriesForObject.get(0);
+
+        assertEquals(drHoldbackRuleId, updateDrHoldbackRuleAuditLogFromValue.getObjectId());
+        assertEquals(userName, updateDrHoldbackRuleAuditLogFromValue.getUserName());
         assertEquals(ChangeTypeEnumDto.UPDATE, updateDrHoldbackRuleAuditLogFromValue.getChangeType());
         assertEquals(ObjectTypeEnumDto.HOLDBACK_DAY, updateDrHoldbackRuleAuditLogFromValue.getChangeName());
+        assertEquals(drHoldbackRuleInputDto.getDrHoldbackValue(), updateDrHoldbackRuleAuditLogFromValue.getIdentifier());
+        assertNull(updateDrHoldbackRuleAuditLogFromValue.getChangeComment());
         assertEquals("Days before: " + drHoldbackDays, updateDrHoldbackRuleAuditLogFromValue.getTextBefore());
         assertEquals("Days after: " + newDrHoldbackDays, updateDrHoldbackRuleAuditLogFromValue.getTextAfter());
-        assertEquals(userName, updateDrHoldbackRuleAuditLogFromValue.getUserName());
-        assertEquals(drHoldbackRuleInputDto.getDrHoldbackValue(), updateDrHoldbackRuleAuditLogFromValue.getChangeComment());
-        assertEquals(drHoldbackRuleId, updateDrHoldbackRuleAuditLogFromValue.getObjectId());
     }
 
     @Test
@@ -497,14 +503,17 @@ public class DsRightsFacadeTest extends DsLicenseUnitTestUtil {
         RightsModuleFacade.updateDrHoldbackDaysFromName(drHoldBackName, newDrHoldbackDays);
         auditLogEntriesForObject = storage.getAuditLogByObjectId(drHoldbackRuleId);
         assertEquals(2, auditLogEntriesForObject.size());
-        AuditEntryOutputDto updateDrHoldbackRuleAuditLogFromName = auditLogEntriesForObject.get(0);
-        assertEquals(ChangeTypeEnumDto.UPDATE, updateDrHoldbackRuleAuditLogFromName.getChangeType());
-        assertEquals("Days before: " + drHoldbackDays, updateDrHoldbackRuleAuditLogFromName.getTextBefore());
-        assertEquals(ObjectTypeEnumDto.HOLDBACK_DAY, updateDrHoldbackRuleAuditLogFromName.getChangeName());
-        assertEquals("Days after: " + newDrHoldbackDays, updateDrHoldbackRuleAuditLogFromName.getTextAfter());
-        assertEquals(userName, updateDrHoldbackRuleAuditLogFromName.getUserName());
-        assertEquals(drHoldbackRuleInputDto.getName(), updateDrHoldbackRuleAuditLogFromName.getChangeComment());
+
+        AuditLogEntryOutputDto updateDrHoldbackRuleAuditLogFromName = auditLogEntriesForObject.get(0);
+
         assertEquals(drHoldbackRuleId, updateDrHoldbackRuleAuditLogFromName.getObjectId());
+        assertEquals(userName, updateDrHoldbackRuleAuditLogFromName.getUserName());
+        assertEquals(ChangeTypeEnumDto.UPDATE, updateDrHoldbackRuleAuditLogFromName.getChangeType());
+        assertEquals(ObjectTypeEnumDto.HOLDBACK_DAY, updateDrHoldbackRuleAuditLogFromName.getChangeName());
+        assertEquals(drHoldbackRuleInputDto.getName(), updateDrHoldbackRuleAuditLogFromName.getIdentifier());
+        assertNull(updateDrHoldbackRuleAuditLogFromName.getChangeComment());
+        assertEquals("Days before: " + drHoldbackDays, updateDrHoldbackRuleAuditLogFromName.getTextBefore());
+        assertEquals("Days after: " + newDrHoldbackDays, updateDrHoldbackRuleAuditLogFromName.getTextAfter());
     }
 
     @Test
@@ -528,17 +537,18 @@ public class DsRightsFacadeTest extends DsLicenseUnitTestUtil {
 
             auditLogEntriesForObject = storage.getAuditLogByObjectId(drHoldBackRangesId);
             assertEquals(2, auditLogEntriesForObject.size());
-            AuditEntryOutputDto deleteDrHoldbackRangeAuditLog = auditLogEntriesForObject.get(0);
 
+            AuditLogEntryOutputDto deleteDrHoldbackRangeAuditLog = auditLogEntriesForObject.get(0);
+
+            assertEquals(drHoldBackRangesId, deleteDrHoldbackRangeAuditLog.getObjectId());
+            assertTrue(auditLogEntriesForObject.get(1).getModifiedTime() < deleteDrHoldbackRangeAuditLog.getModifiedTime());
+            assertEquals(userName, deleteDrHoldbackRangeAuditLog.getUserName());
             assertEquals(ChangeTypeEnumDto.DELETE, deleteDrHoldbackRangeAuditLog.getChangeType());
             assertEquals(ObjectTypeEnumDto.HOLDBACK_RANGE, deleteDrHoldbackRangeAuditLog.getChangeName());
+            assertEquals(drHoldbackRangeInputDto.getDrHoldbackValue(), deleteDrHoldbackRangeAuditLog.getIdentifier());
+            assertNull(deleteDrHoldbackRangeAuditLog.getChangeComment());
             // assertEquals(ranges.toString(), deleteDrHoldbackRangeAuditLog.getTextBefore()); TODO: This should be fixed together with: DRA-2085
             assertNull(deleteDrHoldbackRangeAuditLog.getTextAfter());
-            assertEquals(userName, deleteDrHoldbackRangeAuditLog.getUserName());
-            assertEquals(drHoldbackRangeInputDto.getDrHoldbackValue(), deleteDrHoldbackRangeAuditLog.getChangeComment());
-            assertEquals(drHoldBackRangesId, deleteDrHoldbackRangeAuditLog.getObjectId());
-
-            assertTrue(auditLogEntriesForObject.get(1).getModifiedTime() < deleteDrHoldbackRangeAuditLog.getModifiedTime());
         }
     }
 
@@ -550,15 +560,17 @@ public class DsRightsFacadeTest extends DsLicenseUnitTestUtil {
 
         RightsModuleFacade.deleteDrHoldbackRule(drHoldBackValue);
         auditLogEntriesForObject = storage.getAuditLogByObjectId(drHoldbackRuleId);
-
         assertEquals(2, auditLogEntriesForObject.size());
-        AuditEntryOutputDto deleteDrHoldbackRuleAuditLog = auditLogEntriesForObject.get(0);
+
+        AuditLogEntryOutputDto deleteDrHoldbackRuleAuditLog = auditLogEntriesForObject.get(0);
+
+        assertEquals(drHoldbackRuleId, deleteDrHoldbackRuleAuditLog.getObjectId());
+        assertEquals(userName, deleteDrHoldbackRuleAuditLog.getUserName());
         assertEquals(ChangeTypeEnumDto.DELETE, deleteDrHoldbackRuleAuditLog.getChangeType());
         assertEquals(ObjectTypeEnumDto.HOLDBACK_RULE, deleteDrHoldbackRuleAuditLog.getChangeName());
+        assertEquals(drHoldbackRuleInputDto.getDrHoldbackValue(), deleteDrHoldbackRuleAuditLog.getIdentifier());
+        assertNull(deleteDrHoldbackRuleAuditLog.getChangeComment());
         //assertEquals(drHoldbackRuleInputDto.toString(), deleteDrHoldbackRuleAuditLog.getTextBefore()); TODO: This should be fixed together with: DRA-2085
         assertNull(deleteDrHoldbackRuleAuditLog.getTextAfter());
-        assertEquals(userName, deleteDrHoldbackRuleAuditLog.getUserName());
-        assertEquals(drHoldbackRuleInputDto.getDrHoldbackValue(), deleteDrHoldbackRuleAuditLog.getChangeComment());
-        assertEquals(drHoldbackRuleId, deleteDrHoldbackRuleAuditLog.getObjectId());
     }
 }
