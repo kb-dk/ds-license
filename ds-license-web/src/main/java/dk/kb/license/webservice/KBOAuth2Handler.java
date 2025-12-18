@@ -14,6 +14,7 @@
  */
 package dk.kb.license.webservice;
 
+import dk.kb.ds.shared.oauth.KBAuthorization;
 import dk.kb.util.webservice.exception.ForbiddenServiceException;
 import org.json.JSONObject;
 import org.json.JSONArray;

@@ -6,7 +6,7 @@
     <parent>
         <groupId>dk.kb.license</groupId>
         <artifactId>ds-license-parent</artifactId>
-        <version>3.0.1-SNAPSHOT</version>
+        <version>3.0.4-SNAPSHOT</version>
     </parent>
 
     <artifactId>ds-license-web</artifactId>
@@ -24,7 +24,7 @@
         <dependency>
             <groupId>dk.kb.storage</groupId>
             <artifactId>ds-storage-api</artifactId>
-            <version>3.0.1-SNAPSHOT</version>
+            <version>3.0.4-SNAPSHOT</version>
         </dependency>
     </dependencies>
 

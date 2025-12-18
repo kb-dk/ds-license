@@ -6,7 +6,7 @@
     <parent>
         <groupId>dk.kb.license</groupId>
         <artifactId>ds-license-parent</artifactId>
-        <version>3.0.1-SNAPSHOT</version>
+        <version>3.0.4-SNAPSHOT</version>
     </parent>
 
     <artifactId>ds-license-api</artifactId>
@@ -66,6 +66,7 @@
                         <modelPackage>${project.package}.model.v1</modelPackage>
                         <!--<dateLibrary>threetenbp</dateLibrary>-->
                         <!--<dateLibrary>Java11</dateLibrary>-->
+                        <dateLibrary>java8</dateLibrary>
                         <implFolder>src/main/java</implFolder>
                         <invokerPackage>${project.package}</invokerPackage>
                     </configOptions>

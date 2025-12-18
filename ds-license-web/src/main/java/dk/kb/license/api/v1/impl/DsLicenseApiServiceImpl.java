@@ -1,6 +1,6 @@
 package dk.kb.license.api.v1.impl;
 
-import dk.kb.license.api.v1.DsLicenseApi;
+import dk.kb.license.api.v1.DsLicenseApiApi;
 import dk.kb.license.config.ServiceConfig;
 import dk.kb.license.model.v1.*;
 import dk.kb.license.storage.License;
@@ -19,7 +19,7 @@ import java.util.ArrayList;
  * ds-license by the Royal Danish Library
  */
 @InInterceptors(interceptors = "dk.kb.license.webservice.KBAuthorizationInterceptor")
-public class DsLicenseApiServiceImpl extends ImplBase implements DsLicenseApi {
+public class DsLicenseApiServiceImpl extends ImplBase implements DsLicenseApiApi {
     private static final Logger log = LoggerFactory.getLogger(DsLicenseApiServiceImpl.class);
 
     @Override
