@@ -1,7 +1,5 @@
 package dk.kb.license.storage;
 
-
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -23,29 +21,22 @@ import org.slf4j.LoggerFactory;
 
 import dk.kb.license.Util;
 import dk.kb.license.config.ServiceConfig;
-import dk.kb.license.model.v1.AuditEntryOutputDto;
-import dk.kb.license.model.v1.ChangeTypeEnumDto;
 import dk.kb.license.model.v1.GetUserGroupsInputDto;
-import dk.kb.license.model.v1.ObjectTypeEnumDto;
 import dk.kb.license.model.v1.UserGroupDto;
 import dk.kb.license.model.v1.UserObjAttributeDto;
 import dk.kb.license.solr.AbstractSolrJClient;
 import dk.kb.license.validation.LicenseValidator;
 import dk.kb.util.webservice.exception.InvalidArgumentServiceException;
 
-/*
+/**
  * Unittest class for the H2Storage.
- * All tests creates and use H2 database in the directory: target/h2
- * 
+ * All tests create and use H2 database in the directory: target/h2
  * The directory will be deleted before the first test-method is called.
  * Each test-method will delete all entries in the database, but keep the database tables.
- * 
- * Currently the directory is not deleted after the tests have run. This is useful as you can
+ * Currently, the directory is not deleted after the tests have run. This is useful as you can
  * open and open the database and see what the unit-tests did.
  */
-
-public class LicenseModuleStorageTest extends DsLicenseUnitTestUtil {
-
+public class LicenseModuleStorageTest extends UnitTestUtil {
     private static final Logger log = LoggerFactory.getLogger(LicenseModuleStorageTest.class);
 
     private static final String INSERT_DEFAULT_CONFIGURATION_DDL_FILE = "src/test/resources/ddl/licensemodule_default_configuration.ddl";
@@ -56,21 +47,19 @@ public class LicenseModuleStorageTest extends DsLicenseUnitTestUtil {
 
     @BeforeAll
     public static void beforeClass() throws IOException, SQLException {
-
         ServiceConfig.initialize("conf/ds-license*.yaml");
         BaseModuleStorage.initialize(DRIVER, URL, USERNAME, PASSWORD);
-        H2DbUtil.createEmptyH2DBFromDDL(URL,DRIVER,USERNAME,PASSWORD, List.of("ddl/licensemodule_create_h2_unittest.ddl"));
+        H2DbUtil.createEmptyH2DBFromDDL(URL,DRIVER,USERNAME,PASSWORD, List.of("ddl/licensemodule_create_h2_unittest.ddl", "ddl/audit_log_module_create_h2_unittest.ddl"));
         storage = new LicenseModuleStorageForUnitTest ();
-
     }
 
-    /*
+    /**
      * Delete all records between each unittest. The clearTableRecords is only defined on the unittest extension of the storage module
-     * The facade class is reponsible for committing transactions. So clean up between unittests.
+     * The facade class is responsible for committing transactions. So clean up between unittests.
      */
     @BeforeEach
     public void beforeEach() throws SQLException {        
-       ArrayList<String> tables = new ArrayList<String>();
+       List<String> tables = new ArrayList<>();
        tables.add("PRESENTATIONTYPES");
        tables.add("GROUPTYPES");
        tables.add("ATTRIBUTETYPES");
@@ -886,9 +875,7 @@ public class LicenseModuleStorageTest extends DsLicenseUnitTestUtil {
         groups.add(group1);     
         filtered = LicenseValidator.filterLicensesWithGroupNamesAndPresentationTypeNoRestrictionGroup(licenses, groups, DOWNLOAD);
         assertEquals(1,filtered.size()); //license validated.
-    }   
-
-
+    }
 
     @Test
     public void testGetUserGroupsWithPresentationTypes() {
@@ -1061,32 +1048,6 @@ public class LicenseModuleStorageTest extends DsLicenseUnitTestUtil {
         solrIdsQuery = AbstractSolrJClient.makeAuthIdPart(ids,filterField); 
 
         assertEquals("(" + filterField + ":\"testId3\")", solrIdsQuery);
-    }
-
-
-
-    @Test
-    public void testPersistAndLoadAuditLogEntry() throws SQLException, IllegalArgumentException {
-         
-         Long objectId = 123456789L;
-         String userName = "teg";
-         ChangeTypeEnumDto changeType = ChangeTypeEnumDto.UPDATE;
-         ObjectTypeEnumDto changeName = ObjectTypeEnumDto.DR_PRODUCTION_ID;
-         String changeComment = "changeComment";
-         String textBefore = "before";
-         String textAfter = "after";
-                                   
-        AuditLogEntry auditLog = new AuditLogEntry(objectId, userName, changeType, changeName, changeComment, textBefore, textAfter);
-        
-        long auditLogId = storage.persistAuditLog(auditLog);
-        AuditEntryOutputDto auditFromStorage = storage.getAuditLogById(auditLogId);
-        assertEquals(userName, auditFromStorage.getUserName());
-        assertEquals(changeType, auditFromStorage.getChangeType());
-        assertEquals(changeName, auditFromStorage.getChangeName());
-        assertEquals(changeComment, auditFromStorage.getChangeComment());
-        assertEquals(textBefore, auditFromStorage.getTextBefore());
-        assertEquals(textAfter, auditFromStorage.getTextAfter());
-        assertTrue(auditFromStorage.getModifiedTime() > 0); //modifiedtime has been set
     }
     
     @Test

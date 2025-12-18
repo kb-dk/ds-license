@@ -1,27 +1,29 @@
 package dk.kb.license.storage;
 
-import dk.kb.license.config.ServiceConfig;
-import dk.kb.license.model.v1.*;
-import org.apache.commons.lang3.StringUtils;
+import dk.kb.license.mapper.DrHoldbackCategoryOutputDtoMapper;
+import dk.kb.license.mapper.DrHoldbackRangeOutputDtoMapper;
+import dk.kb.license.mapper.RestrictedIdOutputDtoMapper;
+import dk.kb.license.model.v1.DrHoldbackCategoryOutputDto;
+import dk.kb.license.model.v1.DrHoldbackRangeOutputDto;
+import dk.kb.license.model.v1.RestrictedIdOutputDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Class for interacting with the part of DS-License which handles the calculation of rights, such as holdbacks and restrictions.
  */
-public class RightsModuleStorage extends BaseModuleStorage{
+public class RightsModuleStorage extends AuditLogModuleStorage {
     private static final Logger log = LoggerFactory.getLogger(RightsModuleStorage.class);
+
+    private final static RestrictedIdOutputDtoMapper restrictedIdOutputDtoMapper = new RestrictedIdOutputDtoMapper();
+    private final static DrHoldbackCategoryOutputDtoMapper drHoldbackCategoryOutputDtoMapper = new DrHoldbackCategoryOutputDtoMapper();
+    private final static DrHoldbackRangeOutputDtoMapper drHoldbackRangeOutputDtoMapper = new DrHoldbackRangeOutputDtoMapper();
 
     private final String RESTRICTED_ID_TABLE = "restricted_ids";
 
@@ -29,528 +31,490 @@ public class RightsModuleStorage extends BaseModuleStorage{
     private final String RESTRICTED_ID_IDVALUE = "id_value";
     private final String RESTRICTED_ID_IDTYPE = "id_type";
     private final String RESTRICTED_ID_PLATFORM = "platform";
+    private final String RESTRICTED_ID_TITLE = "title";
     private final String RESTRICTED_ID_COMMENT = "comment";
-    private final String RESTRICTED_ID_MODIFIED_BY = "modified_by";
-    private final String RESTRICTED_ID_MODIFIED_TIME = "modified_time";
 
     private final String createRestrictedIdQuery = "INSERT INTO " + RESTRICTED_ID_TABLE +
-            " ("+RESTRICTED_ID_ID+","+ RESTRICTED_ID_IDVALUE +","+ RESTRICTED_ID_IDTYPE +","+ RESTRICTED_ID_PLATFORM +","+
-            RESTRICTED_ID_COMMENT +","+ RESTRICTED_ID_MODIFIED_BY +","+ RESTRICTED_ID_MODIFIED_TIME +")" +
-            " VALUES (?,?,?,?,?,?,?)";
+            " (" + RESTRICTED_ID_ID + "," + RESTRICTED_ID_IDVALUE + "," + RESTRICTED_ID_IDTYPE + "," + RESTRICTED_ID_PLATFORM + "," +
+            RESTRICTED_ID_TITLE + "," + RESTRICTED_ID_COMMENT + ")" +
+            " VALUES (?,?,?,?,?,?)";
     private final String readRestrictedIdQuery = "SELECT * FROM " + RESTRICTED_ID_TABLE + " WHERE " + RESTRICTED_ID_IDVALUE + " = ? AND " + RESTRICTED_ID_IDTYPE + " = ? AND " + RESTRICTED_ID_PLATFORM + " = ? ";
-    private final String readRestrictedIdQueryByInternalId = "SELECT * FROM " + RESTRICTED_ID_TABLE + " WHERE " + RESTRICTED_ID_ID + " = ?";
+    private final String readRestrictedIdByIdQuery = "SELECT * FROM " + RESTRICTED_ID_TABLE + " WHERE " + RESTRICTED_ID_ID + " = ?";
 
-    private final String updateRestrictedIdQuery = "UPDATE " + RESTRICTED_ID_TABLE +" SET "+
-            RESTRICTED_ID_PLATFORM +" = ? , " +
-            RESTRICTED_ID_COMMENT +" = ? , " +
-            RESTRICTED_ID_MODIFIED_BY +" = ? , " +
-            RESTRICTED_ID_MODIFIED_TIME +" = ? " +
-            " WHERE " +
-            RESTRICTED_ID_IDVALUE +" = ? AND " +
-            RESTRICTED_ID_IDTYPE +" = ?" ;
+    private final String readRestrictedIdCommentByIdValueQuery = "SELECT comment FROM " + RESTRICTED_ID_TABLE + " WHERE " + RESTRICTED_ID_IDVALUE + " = ?";
+    private final String updateRestrictedIdQuery = "UPDATE " + RESTRICTED_ID_TABLE + " SET " +
+            RESTRICTED_ID_TITLE + " = ? " + ", " +
+            RESTRICTED_ID_COMMENT + " = ? " +
+            "WHERE " +
+            RESTRICTED_ID_ID + " = ?";
     private final String deleteRestrictedIdQuery = "DELETE FROM " + RESTRICTED_ID_TABLE + " WHERE " + RESTRICTED_ID_IDVALUE + " = ? AND " + RESTRICTED_ID_IDTYPE + " = ? AND " + RESTRICTED_ID_PLATFORM + " = ? ";
-    private final String deleteRestrictedIdByInternalIdQuery = "DELETE FROM " + RESTRICTED_ID_TABLE + " WHERE " + RESTRICTED_ID_ID + " = ?";
+    private final String deleteRestrictedIdByIdQuery = "DELETE FROM " + RESTRICTED_ID_TABLE + " WHERE " + RESTRICTED_ID_ID + " = ?";
 
-    private final String allRestrictedIdsQuery = "SELECT * FROM " + RESTRICTED_ID_TABLE + " WHERE " + RESTRICTED_ID_IDTYPE + " LIKE ? AND " + RESTRICTED_ID_PLATFORM + " LIKE ?";
+    private final String allRestrictedIdsQuery = "SELECT * FROM " + RESTRICTED_ID_TABLE + " WHERE " + RESTRICTED_ID_IDTYPE + " = ? AND " + RESTRICTED_ID_PLATFORM + " = ?";
 
-    private final String DR_HOLDBACK_RULES_TABLE = "DR_HOLDBACK_RULES";
-    private final String DR_HOLDBACK_RULES_ID = "id";
-    private final String DR_HOLDBACK_RULES_DAYS = "days";
-    private final String DR_HOLDBACK_RULES_NAME = "name";
+    private final String DR_HOLDBACK_CATEGORIES_TABLE = "dr_holdback_categories";
+    private final String DR_HOLDBACK_CATEGORIES_ID = "id";
+    private final String DR_HOLDBACK_CATEGORIES_KEY = "key";
+    private final String DR_HOLDBACK_CATEGORIES_NAME = "name";
+    private final String DR_HOLDBACK_CATEGORIES_DAYS = "days";
 
-    private final String DR_HOLDBACK_MAP_TABLE = "DR_HOLDBACK_MAP";
-    private final String DR_HOLDBACK_MAP_ID = "id";
-    private final String DR_HOLDBACK_MAP_CONTENT_FROM = "content_range_from";
-    private final String DR_HOLDBACK_MAP_CONTENT_TO = "content_range_to";
-    private final String DR_HOLDBACK_MAP_FORM_FROM = "form_range_from";
-    private final String DR_HOLDBACK_MAP_FORM_TO = "form_range_to";
-    private final String DR_HOLDBACK_MAP_HOLDBACK_ID = "dr_holdback_id";
+    private final String DR_HOLDBACK_RANGES_TABLE = "dr_holdback_ranges";
+    private final String DR_HOLDBACK_RANGES_ID = "id";
+    private final String DR_HOLDBACK_RANGES_CONTENT_FROM = "content_range_from";
+    private final String DR_HOLDBACK_RANGES_CONTENT_TO = "content_range_to";
+    private final String DR_HOLDBACK_RANGES_FORM_FROM = "form_range_from";
+    private final String DR_HOLDBACK_RANGES_FORM_TO = "form_range_to";
+    private final String DR_HOLDBACK_RANGES_DR_HOLDBACK_CATEGORY_KEY = "dr_holdback_category_key";
 
-    private final String createDrHoldbackRuleQuery = "INSERT INTO "+DR_HOLDBACK_RULES_TABLE +
-            " ("+ DR_HOLDBACK_RULES_ID +","+ DR_HOLDBACK_RULES_NAME +","+ DR_HOLDBACK_RULES_DAYS +")" +
-            " VALUES (?,?,?)";
-    private final String deleteDrHoldbackRuleQuery = "DELETE FROM " + DR_HOLDBACK_RULES_TABLE +
-            " WHERE id = ?";
-    private final String getDrHoldbackDaysFromNameQuery = "SELECT " + DR_HOLDBACK_RULES_DAYS +" FROM "+DR_HOLDBACK_RULES_TABLE +
-            " WHERE name = ?";
-    private final String getDrHoldbackDaysFromIDQuery = "SELECT " + DR_HOLDBACK_RULES_DAYS +" FROM "+DR_HOLDBACK_RULES_TABLE +
-            " WHERE id = ?";
-    private final String getAllDrHoldbackRulesQuery = "SELECT * FROM " + DR_HOLDBACK_RULES_TABLE;
-    private final String getDrHoldbackRuleFromId = "SELECT * FROM " + DR_HOLDBACK_RULES_TABLE
-            + " WHERE id = ?";
-    private final String updateDrHoldbackDaysForId = "Update " + DR_HOLDBACK_RULES_TABLE
-            + " SET days = ?"
-            + " WHERE id = ?";
-    private final String updateDrHoldbackDaysForName = "Update " + DR_HOLDBACK_RULES_TABLE
-            + " SET days = ?"
-            + " WHERE name = ?";
-
-    private final String createHoldbackMapping = "INSERT INTO " + DR_HOLDBACK_MAP_TABLE +
-            "("+DR_HOLDBACK_MAP_ID+","+DR_HOLDBACK_MAP_CONTENT_FROM+","+DR_HOLDBACK_MAP_CONTENT_TO+","+DR_HOLDBACK_MAP_FORM_FROM+","+DR_HOLDBACK_MAP_FORM_TO+","+DR_HOLDBACK_MAP_HOLDBACK_ID+")"+
+    private final String createDrHoldbackCategoryQuery = "INSERT INTO " + DR_HOLDBACK_CATEGORIES_TABLE +
+            " (" + DR_HOLDBACK_CATEGORIES_ID + ", \"" + DR_HOLDBACK_CATEGORIES_KEY + "\" ," + DR_HOLDBACK_CATEGORIES_NAME + ", " + DR_HOLDBACK_CATEGORIES_DAYS + ")" +
+            " VALUES (?,?,?,?)";
+    private final String updateDrHoldbackCategoryQuery = "UPDATE " + DR_HOLDBACK_CATEGORIES_TABLE
+            + " SET " + DR_HOLDBACK_CATEGORIES_DAYS + " = ?"
+            + " WHERE " + DR_HOLDBACK_CATEGORIES_ID + " = ?";
+    private final String deleteDrHoldbackCategoryQuery = "DELETE FROM " + DR_HOLDBACK_CATEGORIES_TABLE +
+            " WHERE " + DR_HOLDBACK_CATEGORIES_ID + " = ?";
+    private final String getDrHoldbackCategoryByNameQuery = "SELECT * FROM " + DR_HOLDBACK_CATEGORIES_TABLE
+            + " WHERE " + DR_HOLDBACK_CATEGORIES_NAME + " = ?";
+    private final String getDrHoldbackCategoryByIdQuery = "SELECT * FROM " + DR_HOLDBACK_CATEGORIES_TABLE
+            + " WHERE " + DR_HOLDBACK_CATEGORIES_ID + " = ?";
+    private final String getDrHoldbackCategoryByKeyQuery = "SELECT * FROM " + DR_HOLDBACK_CATEGORIES_TABLE
+            + " WHERE \"" + DR_HOLDBACK_CATEGORIES_KEY + "\" = ?";
+    private final String getDrHoldbackCategoriesQuery = "SELECT * FROM " + DR_HOLDBACK_CATEGORIES_TABLE;
+    private final String createDrHoldbackRangeQuery = "INSERT INTO " + DR_HOLDBACK_RANGES_TABLE +
+            "(" + DR_HOLDBACK_RANGES_ID + "," + DR_HOLDBACK_RANGES_CONTENT_FROM + "," + DR_HOLDBACK_RANGES_CONTENT_TO + "," + DR_HOLDBACK_RANGES_FORM_FROM + "," + DR_HOLDBACK_RANGES_FORM_TO + "," + DR_HOLDBACK_RANGES_DR_HOLDBACK_CATEGORY_KEY + ")" +
             " VALUES (?,?,?,?,?,?)";
 
-    private final String getHoldbackIdFromContentAndForm = "SELECT " + DR_HOLDBACK_MAP_HOLDBACK_ID +
-            " FROM " + DR_HOLDBACK_MAP_TABLE + " WHERE " +
-            " content_range_from <= ? AND " +
-            " content_range_to >= ?  AND " +
-            " form_range_from <= ? AND " +
-            " form_range_to >= ? ";
+    private final String getDrHoldbackCategoryKeyByContentAndFormQuery = "SELECT " + DR_HOLDBACK_RANGES_DR_HOLDBACK_CATEGORY_KEY +
+            " FROM " + DR_HOLDBACK_RANGES_TABLE + " WHERE "
+            + DR_HOLDBACK_RANGES_CONTENT_FROM + " <= ? AND "
+            + DR_HOLDBACK_RANGES_CONTENT_TO + " >= ?  AND "
+            + DR_HOLDBACK_RANGES_FORM_FROM + " <= ? AND "
+            + DR_HOLDBACK_RANGES_FORM_TO + " >= ? ";
 
-
-    private final String getRangesForDrHoldbackId = "SELECT * FROM "+DR_HOLDBACK_MAP_TABLE+" WHERE dr_holdback_id = ?";
-    private final String deleteRangesForDrHoldbackId = "DELETE from "+DR_HOLDBACK_MAP_TABLE+" WHERE dr_holdback_id = ?";
-
+    private final String getDrHoldbackRangesByDrHoldbackCategoryKeyQuery = "SELECT * FROM " + DR_HOLDBACK_RANGES_TABLE + " WHERE " + DR_HOLDBACK_RANGES_DR_HOLDBACK_CATEGORY_KEY + " = ?";
+    private final String deleteDrHoldbackRangesByDrHoldbackCategoryKeyQuery = "DELETE FROM " + DR_HOLDBACK_RANGES_TABLE + " WHERE " + DR_HOLDBACK_RANGES_DR_HOLDBACK_CATEGORY_KEY + " = ?";
 
     public RightsModuleStorage() throws SQLException {
-       super();
+        super();
     }
 
     /**
-     * Creates an entry in the restrictedID table. Also updates the mTime for the related record in ds-storage.
+     * Creates an entry in the restricted_ids table. Also updates the mTime for the related record in ds-storage.
      *
-     * @param id_value The value of the ID
-     * @param id_type The type of the ID
+     * @param idValue  The value of the id
+     * @param idType   The type of the id
      * @param platform The platform where the object is restricted (e.g DR)
-     * @param comment Just a comment
-     * @param modifiedBy The id of the user creating the restricted ID
-     * @param modifiedTime timestamp for creation
+     * @param title    Title on broadcast
+     * @param comment  Just a comment
      * @throws SQLException
      */
-    public long createRestrictedId(String id_value, String id_type, String platform, String comment, String modifiedBy, long modifiedTime) throws SQLException {
-        long uniqueID = generateUniqueID();
+    public long createRestrictedId(String idValue, String idType, String platform, String title, String comment) throws SQLException {
+        long id = generateUniqueID();
 
-        try (PreparedStatement stmt = connection.prepareStatement(createRestrictedIdQuery)){
-            stmt.setLong(1, uniqueID);
-            stmt.setString(2, id_value);
-            stmt.setString(3, id_type);
+        log.debug("generating unique restricted id: " + id);
+
+        try (PreparedStatement stmt = connection.prepareStatement(createRestrictedIdQuery)) {
+            stmt.setLong(1, id);
+            stmt.setString(2, idValue);
+            stmt.setString(3, idType);
             stmt.setString(4, platform);
-            stmt.setString(5, comment);
-            stmt.setString(6, modifiedBy);
-            stmt.setLong(7, modifiedTime);
+            stmt.setString(5, title);
+            stmt.setString(6, comment);
             stmt.execute();
-        }  catch (SQLException e) {
-            log.error("SQL Exception in persistClause:" + e.getMessage());
+        } catch (SQLException e) {
+            log.error("SQL Exception in createRestrictedId", e);
             throw e;
         }
-      return uniqueID;        
+        return id;
     }
 
     /**
-     * Gets an entry from the restrinctedID table
+     * Gets an entry from the restricted_ids table.
      *
-     * @param id_value value of the ID
-     * @param id_type type of ID
-     * @param platform platform where the ID is restricted
+     * @param idValue  value of the id
+     * @param idType   type of id
+     * @param platform platform where the id is restricted
      * @return
      * @throws SQLException
      */
-    public RestrictedIdOutputDto getRestrictedId(String id_value, String id_type, String platform) throws SQLException {
+    public RestrictedIdOutputDto getRestrictedId(String idValue, String idType, String platform) throws SQLException {
         try (PreparedStatement stmt = connection.prepareStatement(readRestrictedIdQuery)) {
-            stmt.setString(1, id_value);
-            stmt.setString(2, id_type);
+            stmt.setString(1, idValue);
+            stmt.setString(2, idType);
             stmt.setString(3, platform);
             ResultSet res = stmt.executeQuery();
+
             while (res.next()) {
-                return createRestrictedIdOutputDtoFromResultSet(res);
+                return restrictedIdOutputDtoMapper.map(res);
             }
+
             return null;
         } catch (SQLException e) {
-            log.error("SQL Exception in readClause:" + e.getMessage());
+            log.error("SQL Exception in getRestrictedId", e);
             throw e;
         }
     }
 
     /**
-     * Updates an entry in the restricted IDs table. Also updates the mTime of the related record in ds-storage.
+     * Updates title and comment on an entry in the restricted_ids table.
      *
-     * @param id_value The value of the ID
-     * @param id_type The type of the ID
-     * @param platform The platform where the object is restricted (e.g DR)
-     * @param comment Just a comment
-     * @param modifiedBy The id of the user creating the restricted ID
-     * @param modifiedTime timestamp for creation
+     * @param id      The unique restricted id
+     * @param title   Title to update
+     * @param comment Comment to update
      * @throws SQLException
      */
-    public void updateRestrictedId(String id_value, String id_type, String platform, String comment, String modifiedBy, long modifiedTime) throws SQLException {
-
-        try (PreparedStatement stmt = connection.prepareStatement(updateRestrictedIdQuery)){
-            stmt.setString(1, platform);
+    public void updateRestrictedId(Long id, String title, String comment) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(updateRestrictedIdQuery)) {
+            stmt.setString(1, title);
             stmt.setString(2, comment);
-            stmt.setString(3, modifiedBy);
-            stmt.setLong(4, modifiedTime);
-            stmt.setString(5, id_value);
-            stmt.setString(6, id_type);
+            stmt.setLong(3, id);
             stmt.execute();
-        }  catch (SQLException e) {
-            log.error("SQL Exception in persist restricted ID" + e.getMessage());
+        } catch (SQLException e) {
+            log.error("SQL Exception in updateRestrictedId", e);
             throw e;
         }
     }
 
     /**
-     * Delete an entry from the restricted IDs table.
+     * Delete an entry from the restricted_ids table.
      *
-     * @param id_value value of the ID
-     * @param id_type type of ID
-     * @param platform platform where the ID is restricted
+     * @param idValue  value of the id
+     * @param idType   type of id
+     * @param platform platform where the id is restricted
      * @throws SQLException
      */
-    public void deleteRestrictedId(String id_value, String id_type, String platform) throws SQLException {
+    public void deleteRestrictedId(String idValue, String idType, String platform) throws SQLException {
         try (PreparedStatement stmt = connection.prepareStatement(deleteRestrictedIdQuery)) {
-            stmt.setString(1, id_value);
-            stmt.setString(2, id_type);
+            stmt.setString(1, idValue);
+            stmt.setString(2, idType);
             stmt.setString(3, platform);
             stmt.execute();
         } catch (SQLException e) {
-            log.error("SQL Exception in delete restricted Id:" + e.getMessage());
+            log.error("SQL Exception in deleteRestrictedId", e);
             throw e;
         }
     }
 
-
     /**
-     * Get an entry from the restricted IDs table by internal ID.
+     * Get an entry from the restricted_ids table by id.
      *
-     * @param internalId to get entry for.
+     * @param id to get entry for.
      * @return a {@link RestrictedIdOutputDto}
      */
-    public RestrictedIdOutputDto getRestrictedIdByInternalId(Long internalId) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement(readRestrictedIdQueryByInternalId)) {
-            stmt.setLong(1, internalId);
+    public RestrictedIdOutputDto getRestrictedIdById(Long id) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(readRestrictedIdByIdQuery)) {
+            stmt.setLong(1, id);
             ResultSet res = stmt.executeQuery();
             while (res.next()) {
-                return createRestrictedIdOutputDtoFromResultSet(res);
+                return restrictedIdOutputDtoMapper.map(res);
             }
             return null;
         } catch (SQLException e) {
-            log.error("SQL Exception in readClause:" + e.getMessage());
+            log.error("SQL Exception in getRestrictedIdById", e);
             throw e;
         }
     }
 
     /**
-     * Delete an entry from the restricted IDs table by internal ID.
+     * Get an entry from the restricted_ids table by id_value (dsId).
      *
-     * @param internalId to delete entry for.
+     * @param dsId to get entry for.
+     * @return a restricted_id comment
      */
-    public int deleteRestrictedIdByInternalId(Long internalId) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(deleteRestrictedIdByInternalIdQuery)) {
-            statement.setLong(1, internalId);
-            int result = statement.executeUpdate();
-            log.info("Deleted '{}' documents by internal ID: '{}'", result, internalId);
-            return result;
-        } catch (SQLException e){
-            log.error("SQL Exception in delete internal ID: " + e.getMessage());
+    public String getRestrictedIdCommentByIdValue(String dsId) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(readRestrictedIdCommentByIdValueQuery)) {
+            stmt.setString(1, dsId);
+            ResultSet res = stmt.executeQuery();
+
+            if (res.next()) {
+                return res.getString(RESTRICTED_ID_COMMENT);
+            }
+
+            return null;
+        } catch (SQLException e) {
+            log.error("SQL Exception in getRestrictedIdCommentByIdValue", e);
             throw e;
         }
     }
 
     /**
-     * Get all restricted Ids from the database
+     * Delete an entry from the restricted_ids table by id
      *
-     * @param idType add clause on this idType
+     * @param id to delete entry for.
+     */
+    public int deleteRestrictedIdById(Long id) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(deleteRestrictedIdByIdQuery)) {
+            statement.setLong(1, id);
+            int result = statement.executeUpdate();
+            log.info("Deleted: {} documents by id: {}", result, id);
+            return result;
+        } catch (SQLException e) {
+            log.error("SQL Exception in deleteRestrictedIdById", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Get all restricted ids from the restricted_ids table
+     *
+     * @param idType   add clause on this idType
      * @param platform add clause on this platform
      * @return
      */
     public List<RestrictedIdOutputDto> getAllRestrictedIds(String idType, String platform) throws SQLException {
         try (PreparedStatement stmt = connection.prepareStatement(allRestrictedIdsQuery)) {
-            stmt.setString(1,StringUtils.isEmpty(idType) ? "%" : idType);
-            stmt.setString(2,StringUtils.isEmpty(platform) ? "%" : platform);
+            stmt.setString(1, idType);
+            stmt.setString(2, platform);
 
             ResultSet res = stmt.executeQuery();
             List<RestrictedIdOutputDto> output = new ArrayList<>();
             while (res.next()) {
-                RestrictedIdOutputDto restrictedIdOutputDto = createRestrictedIdOutputDtoFromResultSet(res);
+                RestrictedIdOutputDto restrictedIdOutputDto = restrictedIdOutputDtoMapper.map(res);
                 output.add(restrictedIdOutputDto);
             }
             return output;
         } catch (SQLException e) {
-            log.error("SQL Exception in readClause:" + e.getMessage());
+            log.error("SQL Exception in getAllRestrictedIds", e);
             throw e;
         }
     }
 
     /**
-     * Create a holdback rule for DR content
+     * Create a holdback category for DR content
      *
-     * @param id id of the rule
-     * @param name name of the rule
-     * @param days number of holdback days
+     * @param key  value of the DR holdback category
+     * @param name name of the DR holdback category
+     * @param days number of holdback days of the DR holdback category
+     * @return uniqueId       id of the DR holdback category
      * @throws SQLException
      */
-    public void createDrHoldbackRule(String id, String name, int days) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement(createDrHoldbackRuleQuery)) {
-            stmt.setString(1, id);
-            stmt.setString(2, name);
-            stmt.setInt(3, days);
+    public long createDrHoldbackCategory(String key, String name, int days) throws SQLException {
+        long uniqueId = generateUniqueID();
+        try (PreparedStatement stmt = connection.prepareStatement(createDrHoldbackCategoryQuery)) {
+            stmt.setLong(1, uniqueId);
+            stmt.setString(2, key);
+            stmt.setString(3, name);
+            stmt.setInt(4, days);
             stmt.execute();
         } catch (SQLException e) {
-            log.error("SQL Exception in createDrHoldbackRule:" + e.getMessage());
+            log.error("SQL Exception in createDrHoldbackCategory", e);
             throw e;
         }
+
+        return uniqueId;
     }
 
     /**
-     * Delete a holdback rule for DR content
-     * @param id id of the rule
+     * update the number of holdback days of a holdback category
+     *
+     * @param id   value of the holdback category
+     * @param days number of days
      * @throws SQLException
      */
-    public void deleteDrHoldbackRule(String id) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement(deleteDrHoldbackRuleQuery)) {
-            stmt.setString(1,id);
+    public void updateDrHoldbackCategory(Long id, int days) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(updateDrHoldbackCategoryQuery)) {
+            stmt.setInt(1, days);
+            stmt.setLong(2, id);
             stmt.execute();
         } catch (SQLException e) {
-            log.error("SQL Exception in createDrHoldbackRule:" + e.getMessage());
+            log.error("SQL Exception in updateDrHoldbackCategory", e);
             throw e;
         }
     }
 
     /**
-     * Get the number of holdback days
-     * @param id id of the holdback rule
-     * @return the number of holdback days or -1 if not holdback rule is found.
+     * Delete a holdback category for DR content
+     *
+     * @param id value of the holdback category
      * @throws SQLException
      */
-    public int getDrHoldbackdaysFromID(String id) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement(getDrHoldbackDaysFromIDQuery)) {
-            stmt.setString(1,id);
-            ResultSet res = stmt.executeQuery();
-            if (res.next()) {
-                return res.getInt(DR_HOLDBACK_RULES_DAYS);
-            }
-            return -1;
+    public int deleteDrHoldbackCategory(Long id) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(deleteDrHoldbackCategoryQuery)) {
+            stmt.setLong(1, id);
+            int result = stmt.executeUpdate();
+            log.info("Deleted: {} documents by id: {}", result, id);
+            return result;
         } catch (SQLException e) {
-            log.error("SQL Exception in createDrHoldbackRule:" + e.getMessage());
+            log.error("SQL Exception in deleteDrHoldbackCategory", e);
             throw e;
         }
     }
 
     /**
-     * Get the number of holdback days
+     * Get a DR holdback category by id
      *
-     * @param name name of the holdback rule
+     * @param id unique id of the holdback category
      * @return
      * @throws SQLException
      */
-    public int getDrHoldbackDaysFromName(String name) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement(getDrHoldbackDaysFromNameQuery)) {
-            stmt.setString(1,name);
+    public DrHoldbackCategoryOutputDto getDrHoldbackCategoryById(Long id) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(getDrHoldbackCategoryByIdQuery)) {
+            stmt.setLong(1, id);
             ResultSet res = stmt.executeQuery();
             if (res.next()) {
-                return res.getInt(DR_HOLDBACK_RULES_DAYS);
-            }
-            return -1;
-        } catch (SQLException e) {
-            log.error("SQL Exception in createDrHoldbackRule:" + e.getMessage());
-            throw e;
-        }
-    }
-
-    /**
-     * Get a DR holdback rule
-     * @param id id of the rule
-     * @return
-     * @throws SQLException
-     */
-    public DrHoldbackRuleDto getDrHoldbackFromID(String id) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement(getDrHoldbackRuleFromId)) {
-            stmt.setString(1,id);
-            ResultSet res = stmt.executeQuery();
-            if (res.next()) {
-                DrHoldbackRuleDto output = new DrHoldbackRuleDto();
-                output.setId(res.getString(DR_HOLDBACK_RULES_ID));
-                output.setName(res.getString(DR_HOLDBACK_RULES_NAME));
-                output.setDays(res.getInt(DR_HOLDBACK_RULES_DAYS));
-                return output;
+                return drHoldbackCategoryOutputDtoMapper.map(res);
             }
             return null;
         } catch (SQLException e) {
-            log.error("SQL Exception in createDrHoldbackRule:" + e.getMessage());
+            log.error("SQL Exception in getDrHoldbackCategoryById", e);
             throw e;
         }
     }
 
     /**
-     * update the number of holdback days of a holdback rule
-     * @param days number of days
-     * @param id id of the rule
+     * Get a DR holdback category by name
+     *
+     * @param name name of holdback category
+     * @return
      * @throws SQLException
      */
-    public void updateDrHolbackdaysForId(int days, String id) throws SQLException {
-        try(PreparedStatement stmt = connection.prepareStatement(updateDrHoldbackDaysForId)) {
-            stmt.setInt(1,days);
-            stmt.setString(2,id);
-            stmt.execute();
+    public DrHoldbackCategoryOutputDto getDrHoldbackCategoryByName(String name) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(getDrHoldbackCategoryByNameQuery)) {
+            stmt.setString(1, name);
+            ResultSet res = stmt.executeQuery();
+            if (res.next()) {
+                return drHoldbackCategoryOutputDtoMapper.map(res);
+            }
+            return null;
         } catch (SQLException e) {
-            log.error("SQL Exception in updateDrHolbackdaysForId:" + e.getMessage());
+            log.error("SQL Exception in getDrHoldbackCategoryFromName: " + e.getMessage());
             throw e;
         }
     }
 
     /**
-     * update the number of holdback days of a holdback rule
-     * @param days number of days
-     * @param name name of the rule
+     * Get a DR holdback category by key
+     *
+     * @param key value of the holdback category
+     * @return
      * @throws SQLException
      */
-    public void updateDrHolbackdaysForName(int days, String name) throws SQLException {
-        try(PreparedStatement stmt = connection.prepareStatement(updateDrHoldbackDaysForName)) {
-            stmt.setInt(1,days);
-            stmt.setString(2,name);
-            stmt.execute();
+    public DrHoldbackCategoryOutputDto getDrHoldbackCategoryByKey(String key) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(getDrHoldbackCategoryByKeyQuery)) {
+            stmt.setString(1, key);
+            ResultSet res = stmt.executeQuery();
+            if (res.next()) {
+                return drHoldbackCategoryOutputDtoMapper.map(res);
+            }
+            return null;
         } catch (SQLException e) {
-            log.error("SQL Exception in updateDrHolbackdaysForName:" + e.getMessage());
+            log.error("SQL Exception in getDrHoldbackCategoryByKey", e);
             throw e;
         }
     }
 
     /**
-     * list all holdback rules
-     * @return a list of rules
+     * List all DR holdback categories
+     *
+     * @return a list of DR holdback categories
      * @throws SQLException if fails
      */
-    public List<DrHoldbackRuleDto> getAllDrHoldbackRules() throws SQLException {
-        try(PreparedStatement stmt = connection.prepareStatement(getAllDrHoldbackRulesQuery)) {
-            List<DrHoldbackRuleDto> output = new ArrayList<>();
+    public List<DrHoldbackCategoryOutputDto> getDrHoldbackCategories() throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(getDrHoldbackCategoriesQuery)) {
+            List<DrHoldbackCategoryOutputDto> output = new ArrayList<>();
             ResultSet res = stmt.executeQuery();
             while (res.next()) {
-                DrHoldbackRuleDto rule = new DrHoldbackRuleDto();
-                rule.setId(res.getString(DR_HOLDBACK_RULES_ID));
-                rule.setName(res.getString(DR_HOLDBACK_RULES_NAME));
-                rule.setDays(res.getInt(DR_HOLDBACK_RULES_DAYS));
-                output.add(rule);
+                DrHoldbackCategoryOutputDto drHoldbackCategoryOutputDto = drHoldbackCategoryOutputDtoMapper.map(res);
+                output.add(drHoldbackCategoryOutputDto);
             }
             return output;
         } catch (SQLException e) {
-            log.error("SQL Exception in getAllDrHoldbackRules:" + e.getMessage());
+            log.error("SQL Exception in getDrHoldbackCategories", e);
             throw e;
         }
     }
 
     /**
-     * Get the dr_holdback_id from content and form metadata values.
+     * add a content and form range to a drHoldbackCategoryKey
      *
-     * @param content the content id
-     * @param form the form id
+     * @param contentRangeFrom
+     * @param contentRangeTo
+     * @param formRangeFrom
+     * @param formRangeTo
+     * @param drHoldbackCategoryKey
+     * @throws SQLException
+     */
+    public long createDrHoldbackRange(int contentRangeFrom, int contentRangeTo, int formRangeFrom, int formRangeTo, String drHoldbackCategoryKey) throws SQLException {
+        long uniqueId = generateUniqueID();
+        try (PreparedStatement stmt = connection.prepareStatement(createDrHoldbackRangeQuery)) {
+            stmt.setLong(1, uniqueId);
+            stmt.setInt(2, contentRangeFrom);
+            stmt.setInt(3, contentRangeTo);
+            stmt.setInt(4, formRangeFrom);
+            stmt.setInt(5, formRangeTo);
+            stmt.setString(6, drHoldbackCategoryKey);
+            stmt.execute();
+        } catch (SQLException e) {
+            log.error("SQL Exception in createDrHoldbackRange", e);
+            throw e;
+        }
+        return uniqueId;
+    }
+
+    /**
+     * Delete all holdback ranges for a drHoldbackCategoryKey
+     *
+     * @param drHoldbackCategoryKey
+     * @throws SQLException
+     */
+    public int deleteDrHoldbackRangesByDrHoldbackCategoryKey(String drHoldbackCategoryKey) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(deleteDrHoldbackRangesByDrHoldbackCategoryKeyQuery)) {
+            stmt.setString(1, drHoldbackCategoryKey);
+            int result = stmt.executeUpdate();
+            log.info("Deleted: {} documents by drHoldbackCategoryKey: {}", result, drHoldbackCategoryKey);
+            return result;
+        } catch (SQLException e) {
+            log.error("SQL Exception in deleteDrHoldbackRangesByDrHoldbackCategoryKey", e);
+            throw e;
+        }
+    }
+
+    /**
+     * get all form and content ranges for a key
+     *
+     * @param key
      * @return
      * @throws SQLException
      */
-    public String getHoldbackRuleId(int content, int form) throws SQLException {
-        try(PreparedStatement stmt = connection.prepareStatement(getHoldbackIdFromContentAndForm)) {
-            stmt.setInt(1,content);
-            stmt.setInt(2,content);
-            stmt.setInt(3,form);
-            stmt.setInt(4,form);
+    public List<DrHoldbackRangeOutputDto> getDrHoldbackRangesByDrHoldbackCategoryKey(String key) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(getDrHoldbackRangesByDrHoldbackCategoryKeyQuery)) {
+            stmt.setString(1, key);
+            ResultSet result = stmt.executeQuery();
+            List<DrHoldbackRangeOutputDto> output = new ArrayList<>();
+            while (result.next()) {
+                DrHoldbackRangeOutputDto rangeDto = drHoldbackRangeOutputDtoMapper.map(result);
+                output.add(rangeDto);
+            }
+            return output;
+        } catch (SQLException e) {
+            log.error("SQL Exception in getDrHoldbackRangesByDrHoldbackCategoryKey", e);
+            throw e;
+        }
+    }
+
+    /**
+     * Get the drHoldbackCategoryKey from content and form metadata values.
+     *
+     * @param content the content id
+     * @param form    the form id
+     * @return
+     * @throws SQLException
+     */
+    public String getDrHoldbackCategoryKeyByContentAndForm(int content, int form) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement(getDrHoldbackCategoryKeyByContentAndFormQuery)) {
+            stmt.setInt(1, content);
+            stmt.setInt(2, content);
+            stmt.setInt(3, form);
+            stmt.setInt(4, form);
             ResultSet res = stmt.executeQuery();
             if (res.next()) {
-                return res.getString(DR_HOLDBACK_MAP_HOLDBACK_ID);
+                return res.getString(DR_HOLDBACK_RANGES_DR_HOLDBACK_CATEGORY_KEY);
             }
             return null;
         } catch (SQLException e) {
-            log.error("SQL Exception in get holdback rule ID:" + e.getMessage());
-            throw e;
-        }
-
-    }
-
-    /**
-     * add a content and form range to a dr_holdback id
-     *
-     * @param content_range_from
-     * @param content_range_to
-     * @param form_range_from
-     * @param form_range_to
-     * @param holdback_id
-     * @throws SQLException
-     */
-    public long createDrHoldbackMapping(int content_range_from, int content_range_to, int form_range_from, int form_range_to, String holdback_id) throws SQLException {
-        long uniqueID = generateUniqueID();
-        try(PreparedStatement stmt = connection.prepareStatement(createHoldbackMapping)) {
-            stmt.setLong(1,uniqueID);
-            stmt.setInt(2,content_range_from);
-            stmt.setInt(3,content_range_to);
-            stmt.setInt(4,form_range_from);
-            stmt.setInt(5,form_range_to);
-            stmt.setString(6,holdback_id);
-            stmt.execute();
-        } catch (SQLException e) {
-            log.error("SQL Exception in get holdback rule ID:" + e.getMessage());
-            throw e;
-        }
-        return uniqueID;
-    }
-
-    /**
-     * get all form and content ranges for a dr holdback-id
-     *
-     * @param holdbackId
-     * @return
-     * @throws SQLException
-     */
-    public List<DrHoldbackRangeMappingDto> getHoldbackRangesForHoldbackId(String holdbackId) throws SQLException {
-        try(PreparedStatement stmt = connection.prepareStatement(getRangesForDrHoldbackId)) {
-            stmt.setString(1, holdbackId);
-            ResultSet result = stmt.executeQuery();
-            List<DrHoldbackRangeMappingDto> output = new ArrayList<>();
-            while(result.next()) {
-                DrHoldbackRangeMappingDto mapping = new DrHoldbackRangeMappingDto();
-                mapping.setId(result.getString(DR_HOLDBACK_MAP_ID));
-                mapping.setContentRangeFrom(result.getInt(DR_HOLDBACK_MAP_CONTENT_FROM));
-                mapping.setContentRangeTo(result.getInt(DR_HOLDBACK_MAP_CONTENT_TO));
-                mapping.setFormRangeFrom(result.getInt(DR_HOLDBACK_MAP_FORM_FROM));
-                mapping.setFormRangeTo(result.getInt(DR_HOLDBACK_MAP_FORM_TO));
-                mapping.setDrHoldbackId(result.getString(DR_HOLDBACK_MAP_HOLDBACK_ID));
-                output.add(mapping);
-            }
-            return output;
-        } catch (SQLException e) {
-            log.error("SQL Exception delete ranges for holdback id" + e.getMessage());
+            log.error("SQL Exception in getDrHoldbackCategoryKeyByContentAndForm", e);
             throw e;
         }
     }
-
-    /**
-     * Delete all holback mappings for a dr_holdback_id
-     *
-     * @param holdbackId
-     * @throws SQLException
-     */
-    public void deleteMappingsForDrHolbackId(String holdbackId) throws SQLException {
-        try(PreparedStatement stmt = connection.prepareStatement(deleteRangesForDrHoldbackId)) {
-            stmt.setString(1, holdbackId);
-            stmt.execute();
-        } catch (SQLException e) {
-            log.error("SQL Exception delete ranges for holdback id" + e.getMessage());
-            throw e;
-        }
-    }
-
-
-
-    private String convertToHumanReadable(Long modifiedTime) {
-        LocalDateTime localDateTime = LocalDateTime.ofInstant(Instant.ofEpochMilli(modifiedTime), ZoneId.systemDefault());
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(ServiceConfig.getConfig().getString("human-readable-date-format","yyyy-MM-dd HH:mm:ss"), Locale.ENGLISH);
-        return localDateTime.format(formatter);
-    }
-
-    /**
-     * Create a {@link RestrictedIdOutputDto} from a ResultSet, which should contain all needed values for the DTO
-     * @param resultSet containing values from the backing Rights database
-     */
-    private RestrictedIdOutputDto createRestrictedIdOutputDtoFromResultSet(ResultSet resultSet) throws SQLException {
-        RestrictedIdOutputDto output = new RestrictedIdOutputDto();
-        output.setInternalId(resultSet.getLong(RESTRICTED_ID_ID));
-        output.setIdValue(resultSet.getString(RESTRICTED_ID_IDVALUE));
-        output.setIdType(IdTypeEnumDto.fromValue(resultSet.getString(RESTRICTED_ID_IDTYPE)));
-        output.setPlatform(PlatformEnumDto.fromValue(resultSet.getString(RESTRICTED_ID_PLATFORM)));
-        output.setComment(resultSet.getString(RESTRICTED_ID_COMMENT));
-        output.setModifiedBy(resultSet.getString(RESTRICTED_ID_MODIFIED_BY));
-        output.setModifiedTime(resultSet.getLong(RESTRICTED_ID_MODIFIED_TIME));
-        output.setModifiedTimeHuman(convertToHumanReadable(output.getModifiedTime()));
-        return output;
-    }
-
-  
-}   
-
-
+}
