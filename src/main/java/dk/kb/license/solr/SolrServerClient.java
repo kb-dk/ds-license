@@ -5,6 +5,7 @@ import dk.kb.util.webservice.exception.InternalServiceException;
 import dk.kb.util.webservice.exception.InvalidArgumentServiceException;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -16,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Create a Solr client.
@@ -44,9 +46,11 @@ public class SolrServerClient extends AbstractSolrJClient {
     public SolrServerClient(String serverUrl) {
         try {
             this.serverUrl = serverUrl;
-            solrServer = new HttpSolrClient.Builder(serverUrl).build();
-            //solrServer.setParser(new NoOpResponseParser("json"));
-            solrServer.setParser(new XMLResponseParser());
+            solrServer = new Http2SolrClient.Builder(serverUrl)
+                    .withConnectionTimeout(15, TimeUnit.SECONDS)                    
+                    .withIdleTimeout(60, TimeUnit.SECONDS)              
+                    .build();      
+            log.info("solr client initialized:"+serverUrl);
         } catch (RuntimeException e) {
             log.error("Unable to connect to solr-server: {}", serverUrl, e);
         }
