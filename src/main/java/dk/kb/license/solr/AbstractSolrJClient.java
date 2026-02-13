@@ -20,7 +20,7 @@ import java.util.List;
 public abstract class AbstractSolrJClient {
     private static final Logger log = LoggerFactory.getLogger(AbstractSolrJClient.class);
     
-    protected Http2SolrClient solrServer; 
+    protected static Http2SolrClient solrServer; 
     static{ 
         //Silent all the debugs log from HTTP Client (used by SolrJ)
         System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");

@@ -3,6 +3,8 @@ package dk.kb.license.solr;
 import dk.kb.license.config.ServiceConfig;
 import dk.kb.util.webservice.exception.InternalServiceException;
 import dk.kb.util.webservice.exception.InvalidArgumentServiceException;
+
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -48,9 +50,10 @@ public class SolrServerClient extends AbstractSolrJClient {
             this.serverUrl = serverUrl;
             solrServer = new Http2SolrClient.Builder(serverUrl)
                     .withConnectionTimeout(15, TimeUnit.SECONDS)                    
-                    .withIdleTimeout(60, TimeUnit.SECONDS)              
+                    .withIdleTimeout(60, TimeUnit.SECONDS)
+                    //.withMaxConnectionsPerHost(4) // For http2SolrClient this is automatic limited to 4.
                     .build();      
-            log.info("solr client initialized:"+serverUrl);
+            log.info("solr client initialized:"+serverUrl);            
         } catch (RuntimeException e) {
             log.error("Unable to connect to solr-server: {}", serverUrl, e);
         }
@@ -60,7 +63,7 @@ public class SolrServerClient extends AbstractSolrJClient {
         return serverUrl;
     }
 
-    public QueryResponse query(SolrParams solrParams) throws SolrServerException, IOException {
+    public QueryResponse query(SolrParams solrParams) throws SolrServerException, IOException {    
         return solrServer.query(solrParams);
     }
 
