@@ -75,6 +75,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored validate methods for input Strings and Integers.
 - Test deleteDrHoldbackCategory_whenThereIsADrHoldbackRange_thenThrowJdbcSQLIntegrityConstraintViolationException in Changed test in RightsModuleStorageTest.java
   no longer relies on error message containing: `CONSTRAINT_35`.
+- Changeddd 'og' -> & in holdback category names.
 
 ### Fixed
 - Fixed JSP pages with default DeleteReasonDto so it is still possible to delete objects from JSP GUI.
