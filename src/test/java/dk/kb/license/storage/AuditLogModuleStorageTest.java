@@ -96,6 +96,18 @@ public class AuditLogModuleStorageTest extends UnitTestUtil {
             assertEquals(changeComment, auditFromStorage.getChangeComment());
             assertEquals(textBefore, auditFromStorage.getTextBefore());
             assertEquals(textAfter, auditFromStorage.getTextAfter());
+            
+            //list, all
+            ArrayList<AuditLogEntryOutputDto> auditLogList = storage.getAuditLogList(System.currentTimeMillis(), null);
+            assertEquals(1,auditLogList.size());
+            
+            //list DR_PRODUCTION_ID 
+            auditLogList = storage.getAuditLogList(System.currentTimeMillis(),ObjectTypeEnumDto.DR_PRODUCTION_ID);
+            assertEquals(1,auditLogList.size());
+            
+            //list LICENSE (no rows)
+            auditLogList = storage.getAuditLogList(System.currentTimeMillis(),ObjectTypeEnumDto.LICENSE);
+            assertEquals(0,auditLogList.size());            
         }
     }
 }

@@ -1,6 +1,7 @@
 package dk.kb.license.facade;
 
 import dk.kb.license.model.v1.AuditLogEntryOutputDto;
+import dk.kb.license.model.v1.ObjectTypeEnumDto;
 import dk.kb.license.storage.AuditLogEntry;
 import dk.kb.license.storage.AuditLogModuleStorage;
 import dk.kb.license.storage.BaseModuleStorage;
@@ -23,6 +24,21 @@ public class AuditLogModuleFacade {
         });
     }
 
+    /**
+     * Retrieves List of {@link AuditLogEntry} . Maximum elements is 100. Use modifiedTimeStart for pagination.
+     * AuditLogEntries in the list are sorted by modifiedtime desc, so latest will come first in the list.     
+     *      
+     * @param modifiedTimeStart Will extract AuditLogEntries with modifiedtime less than this value
+     * @param type Optional, list only AuditLogEntries of this type. Will list all types if type is null
+     * 
+     * @return List<AuditLogEntryOutputDto> with a maximum of 100 elements in the list. 
+     */
+    public static List<AuditLogEntryOutputDto> getAuditLogList(Long modifiedTimeStart, ObjectTypeEnumDto type) {                                  
+        return BaseModuleStorage.performStorageAction("getAuditLogList()", AuditLogModuleStorage.class, storage -> {
+            return ((AuditLogModuleStorage) storage).getAuditLogList(modifiedTimeStart, type);
+        });
+    }
+    
     /**
      * Retrieves a list of all {@link AuditLogEntry} related to a given object.
      *
