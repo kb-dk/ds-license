@@ -4,6 +4,8 @@ import dk.kb.license.mapper.AuditLogEntryOutputDtoMapper;
 import dk.kb.license.model.v1.AuditLogEntryOutputDto;
 import dk.kb.license.model.v1.ObjectTypeEnumDto;
 import dk.kb.license.webservice.KBAuthorizationInterceptor;
+import dk.kb.util.webservice.exception.InvalidArgumentServiceException;
+
 import org.apache.cxf.jaxrs.utils.JAXRSUtils;
 import org.apache.cxf.message.Message;
 import org.keycloak.representations.AccessToken;
@@ -14,6 +16,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Class for handling the audit log entries.
@@ -35,10 +38,9 @@ public class AuditLogModuleStorage extends BaseModuleStorage {
     private static final String CHANGECOMMENT_COLUMN = "CHANGECOMMENT";
     private static final String TEXTBEFORE_COLUMN = "TEXTBEFORE";
     private static final String TEXTAFTER_COLUMN = "TEXTAFTER";
-
     
-    private final static String selectAuditLogListAllQuery    = "SELECT * FROM " + TABLE + " WHERE " + MODIFIEDTIME_COLUMN + " < ?  ORDER BY "+MODIFIEDTIME_COLUMN + " DESC LIMIT  100";
-    private final static String selectAuditLogListByTypeQuery = "SELECT * FROM " + TABLE + " WHERE " + MODIFIEDTIME_COLUMN + " < ?  AND "+ CHANGENAME_COLUMN+ " = ? ORDER BY " + MODIFIEDTIME_COLUMN + " DESC LIMIT 100";
+    private final static String selectAuditLogOlderThanModifiedTimeQuery    = "SELECT * FROM " + TABLE + " WHERE " + MODIFIEDTIME_COLUMN + " < ? ORDER BY "+MODIFIEDTIME_COLUMN + " DESC LIMIT 100";
+    private final static String selectAuditLogOlderThanModifiedTimeByTypeQuery          = "SELECT * FROM " + TABLE + " WHERE " + MODIFIEDTIME_COLUMN + " < ? AND "+ CHANGENAME_COLUMN + " = ? ORDER BY " + MODIFIEDTIME_COLUMN + " DESC LIMIT 100";
   
     private final static String selectAuditLogQueryById = "SELECT * FROM " + TABLE + " WHERE " + ID_COLUMN + " = ? ";
     private final static String selectAuditLogQueryByObjectId = "SELECT * FROM " + TABLE + " WHERE " + OBJECTID_COLUMN + " = ? " + " ORDER BY " + MODIFIEDTIME_COLUMN + " DESC";
@@ -88,29 +90,18 @@ public class AuditLogModuleStorage extends BaseModuleStorage {
      * AuditLogEntries in the list are sorted by modifiedtime desc, so latest will come first in the list.     
      *      
      * @param modifiedTimeStart Will extract AuditLogEntries with modifiedtime less than this value
-     * @param type Optional, list only AuditLogEntries of this type. Will list all types if type is null
      * 
      * @return List<AuditLogEntryOutputDto> with a maximum of 100 elements in the list. 
      */
-   public ArrayList<AuditLogEntryOutputDto> getAuditLogList(long modifiedTimeStart, ObjectTypeEnumDto type) throws IllegalArgumentException, SQLException {
-       log.debug("AuditlogList called for modifiedTimeStart='{}', type='{}'",modifiedTimeStart ,type);
+   public List<AuditLogEntryOutputDto> getAuditLogListAll(Long modifiedTimeStart) throws IllegalArgumentException, SQLException {
+       log.debug("AuditlogList called for modifiedTimeStart='{}', type='{}'",modifiedTimeStart);
        
        ArrayList<AuditLogEntryOutputDto> auditLogList = new ArrayList<AuditLogEntryOutputDto>();
         
-        //two different versions. Last also has type parameter.
-        String selectStatement = null;       
-        if (type == null) {
-            selectStatement = selectAuditLogListAllQuery;
-        }
-        else {
-            selectStatement = selectAuditLogListByTypeQuery;
-        }
+        //two different versions. Last also has type parameter.        
        
-       try (PreparedStatement stmt = connection.prepareStatement(selectStatement);) {
-           stmt.setLong(1, modifiedTimeStart);
-           if(type != null) {
-             stmt.setString(2, type.getValue());
-           }           
+       try (PreparedStatement stmt = connection.prepareStatement(selectAuditLogOlderThanModifiedTimeQuery);) {
+           stmt.setLong(1, modifiedTimeStart);                     
            ResultSet rs = stmt.executeQuery();
            while (rs.next()) { // maximum one due to unique/primary key constraint              
                 AuditLogEntryOutputDto audit = auditLogEntryOutputDtoMapper.map(rs);
@@ -123,6 +114,43 @@ public class AuditLogModuleStorage extends BaseModuleStorage {
        }
    }
 
+   
+   /**
+    * Retrieves List of {@link AuditLogEntry} . Maximum elements is 100. Use modifiedTimeStart for pagination.
+    * AuditLogEntries in the list are sorted by modifiedtime desc, so latest will come first in the list.     
+    *      
+    * @param modifiedTimeStart Will extract AuditLogEntries with modifiedtime less than this value
+    * @param type Optional, list only AuditLogEntries of this type. Will list all types if type is null
+    * 
+    * @return List<AuditLogEntryOutputDto> with a maximum of 100 elements in the list. 
+    */
+  public List<AuditLogEntryOutputDto> getAuditLogListByType(Long modifiedTimeStart, ObjectTypeEnumDto type) throws IllegalArgumentException, SQLException {
+      if (type== null) {
+          throw new InvalidArgumentServiceException("ObjectTypeEnum must not be null");
+      }
+      
+      log.debug("AuditlogList called for modifiedTimeStart='{}', type='{}'",modifiedTimeStart ,type);
+      
+      ArrayList<AuditLogEntryOutputDto> auditLogList = new ArrayList<AuditLogEntryOutputDto>();              
+      
+      try (PreparedStatement stmt = connection.prepareStatement(selectAuditLogOlderThanModifiedTimeByTypeQuery);) {
+          stmt.setLong(1, modifiedTimeStart);
+          if(type != null) {
+            stmt.setString(2, type.getValue());
+          }           
+          ResultSet rs = stmt.executeQuery();
+          while (rs.next()) { // maximum one due to unique/primary key constraint              
+               AuditLogEntryOutputDto audit = auditLogEntryOutputDtoMapper.map(rs);
+               auditLogList.add(audit);
+          }       
+          return auditLogList;
+      } catch (SQLException e) {
+          log.error("SQL Exception in getAuditLogList: " + e.getMessage());
+          throw e;
+      }
+  }
+
+   
     
     /**
      * @param objectId The ID for the object extract audit log.

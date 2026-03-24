@@ -26,16 +26,21 @@ public class AuditLogModuleFacade {
 
     /**
      * Retrieves List of {@link AuditLogEntry} . Maximum elements is 100. Use modifiedTimeStart for pagination.
-     * AuditLogEntries in the list are sorted by modifiedtime desc, so latest will come first in the list.     
+     * AuditLogEntries in the list are sorted by modifiedTimeStart desc, so latest will come first in the list.     
      *      
-     * @param modifiedTimeStart Will extract AuditLogEntries with modifiedtime less than this value
+     * @param modifiedTimeStart Will extract AuditLogEntries with modifiedTimeStart less than this value
      * @param type Optional, list only AuditLogEntries of this type. Will list all types if type is null
      * 
      * @return List<AuditLogEntryOutputDto> with a maximum of 100 elements in the list. 
      */
     public static List<AuditLogEntryOutputDto> getAuditLogList(Long modifiedTimeStart, ObjectTypeEnumDto type) {                                  
         return BaseModuleStorage.performStorageAction("getAuditLogList()", AuditLogModuleStorage.class, storage -> {
-            return ((AuditLogModuleStorage) storage).getAuditLogList(modifiedTimeStart, type);
+         if (type == null) {
+             return ((AuditLogModuleStorage) storage).getAuditLogListAll(modifiedTimeStart);     
+         }
+         else {
+             return ((AuditLogModuleStorage) storage).getAuditLogListByType(modifiedTimeStart,type);
+         }        
         });
     }
     

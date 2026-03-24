@@ -47,12 +47,12 @@ public class DsAuditApiServiceImpl extends ImplBase implements DsAuditApi {
     }
 
     @Override
-    public List<AuditLogEntryOutputDto> getAuditLogList(Long modifiedTime, ObjectTypeEnumDto type) {      
-        if (modifiedTime == null) {
-            modifiedTime = System.currentTimeMillis();
+    public List<AuditLogEntryOutputDto> getAuditLogOlderThanModifiedTime(Long modifiedTimeStart, ObjectTypeEnumDto type) {      
+        if (modifiedTimeStart == null) {
+            modifiedTimeStart = System.currentTimeMillis();
         }        
         try {
-            return AuditLogModuleFacade.getAuditLogList(modifiedTime, type);
+            return AuditLogModuleFacade.getAuditLogList(modifiedTimeStart, type);
         } catch (Exception e) {
             throw handleException(e);
         }
