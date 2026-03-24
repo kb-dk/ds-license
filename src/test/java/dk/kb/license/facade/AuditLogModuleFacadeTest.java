@@ -13,6 +13,7 @@ import javax.servlet.http.HttpSession;
 import org.apache.cxf.jaxrs.utils.JAXRSUtils;
 import org.apache.cxf.message.MessageImpl;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.AccessToken;
 import org.mockito.MockedStatic;
@@ -45,6 +46,27 @@ public class AuditLogModuleFacadeTest extends UnitTestUtil {
         H2DbUtil.createEmptyH2DBFromDDL(URL, DRIVER, USERNAME, PASSWORD, List.of("ddl/licensemodule_create_h2_unittest.ddl","ddl/audit_log_module_create_h2_unittest.ddl"));
         storage = new  AuditLogModuleStorageForUnitTest();               
     }
+    
+    /*
+     * Delete all records between each unittest. The clearTableRecords is only called from here.
+     * The facade class is responsible for committing transactions. So clean up between unittests.
+     */
+    @BeforeEach
+    public void beforeEach() throws SQLException {
+        ArrayList<String> tables = new ArrayList<>();
+        tables.add("PRESENTATIONTYPES");
+        tables.add("GROUPTYPES");
+        tables.add("ATTRIBUTETYPES");
+        tables.add("LICENSE");
+        tables.add("ATTRIBUTEGROUP");
+        tables.add("ATTRIBUTE");
+        tables.add("VALUE_ORG");
+        tables.add("LICENSECONTENT");    
+        tables.add("PRESENTATION");
+        tables.add("AUDITLOG");    
+        storage.clearTableRecords(tables);
+    }
+    
     
     @Test
     public void testAuditLogList() throws SQLException {
