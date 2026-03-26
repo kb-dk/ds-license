@@ -127,7 +127,7 @@ public class AuditLogModuleStorage extends BaseModuleStorage {
           throw new InvalidArgumentServiceException("ObjectTypeEnum must not be null");
       }
       
-      log.debug("getAuditLogOlderThanModifiedTimeListByType called for modifiedTimeStart='{}', type='{}'",modifiedTimeStart ,changeName);
+      log.debug("getAuditLogOlderThanModifiedTimeListByType called for modifiedTimeStart='{}', changeName='{}'",modifiedTimeStart ,changeName);
       
       List<AuditLogEntryOutputDto> auditLogList = new ArrayList<AuditLogEntryOutputDto>();              
       
