@@ -98,9 +98,7 @@ public class AuditLogModuleStorage extends BaseModuleStorage {
        log.debug("getAuditLogOlderThanModifiedTimeListAll called for modifiedTimeStart='{}', type='{}'", modifiedTimeStart);
        
        List<AuditLogEntryOutputDto> auditLogList = new ArrayList<AuditLogEntryOutputDto>();
-        
-        //two different versions. Last also has type parameter.        
-       
+                       
        try (PreparedStatement stmt = connection.prepareStatement(selectAuditLogOlderThanModifiedTimeQuery);) {
            stmt.setLong(1, modifiedTimeStart);                     
            ResultSet rs = stmt.executeQuery();
@@ -131,7 +129,7 @@ public class AuditLogModuleStorage extends BaseModuleStorage {
       
       log.debug("getAuditLogOlderThanModifiedTimeListByType called for modifiedTimeStart='{}', type='{}'",modifiedTimeStart ,changeName);
       
-      ArrayList<AuditLogEntryOutputDto> auditLogList = new ArrayList<AuditLogEntryOutputDto>();              
+      List<AuditLogEntryOutputDto> auditLogList = new ArrayList<AuditLogEntryOutputDto>();              
       
       try (PreparedStatement stmt = connection.prepareStatement(selectAuditLogOlderThanModifiedTimeByChangeNameQuery);) {
           stmt.setLong(1, modifiedTimeStart);        
