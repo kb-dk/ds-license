@@ -39,8 +39,9 @@ public class AuditLogModuleStorage extends BaseModuleStorage {
     private static final String TEXTBEFORE_COLUMN = "TEXTBEFORE";
     private static final String TEXTAFTER_COLUMN = "TEXTAFTER";
     
+                                
     private final static String selectAuditLogOlderThanModifiedTimeQuery    = "SELECT * FROM " + TABLE + " WHERE " + MODIFIEDTIME_COLUMN + " < ? ORDER BY "+MODIFIEDTIME_COLUMN + " DESC LIMIT 100";
-    private final static String selectAuditLogOlderThanModifiedTimeByTypeQuery          = "SELECT * FROM " + TABLE + " WHERE " + MODIFIEDTIME_COLUMN + " < ? AND "+ CHANGENAME_COLUMN + " = ? ORDER BY " + MODIFIEDTIME_COLUMN + " DESC LIMIT 100";
+    private final static String selectAuditLogOlderThanModifiedTimeByChangeNameQuery          = "SELECT * FROM " + TABLE + " WHERE " + MODIFIEDTIME_COLUMN + " < ? AND "+ CHANGENAME_COLUMN + " = ? ORDER BY " + MODIFIEDTIME_COLUMN + " DESC LIMIT 100";
   
     private final static String selectAuditLogQueryById = "SELECT * FROM " + TABLE + " WHERE " + ID_COLUMN + " = ? ";
     private final static String selectAuditLogQueryByObjectId = "SELECT * FROM " + TABLE + " WHERE " + OBJECTID_COLUMN + " = ? " + " ORDER BY " + MODIFIEDTIME_COLUMN + " DESC";
@@ -93,8 +94,8 @@ public class AuditLogModuleStorage extends BaseModuleStorage {
      * 
      * @return List<AuditLogEntryOutputDto> with a maximum of 100 elements in the list. 
      */
-   public List<AuditLogEntryOutputDto> getAuditLogListAll(Long modifiedTimeStart) throws IllegalArgumentException, SQLException {
-       log.debug("AuditlogList called for modifiedTimeStart='{}', type='{}'",modifiedTimeStart);
+   public List<AuditLogEntryOutputDto> getAuditLogOlderThanModifiedTimeListAll(Long modifiedTimeStart) throws IllegalArgumentException, SQLException {
+       log.debug("getAuditLogOlderThanModifiedTimeListAll called for modifiedTimeStart='{}', type='{}'", modifiedTimeStart);
        
        ArrayList<AuditLogEntryOutputDto> auditLogList = new ArrayList<AuditLogEntryOutputDto>();
         
@@ -109,11 +110,10 @@ public class AuditLogModuleStorage extends BaseModuleStorage {
            }       
            return auditLogList;
        } catch (SQLException e) {
-           log.error("SQL Exception in getAuditLogList: " + e.getMessage());
+           log.error("SQL Exception in getAuditLogOlderThanModifiedTimeListAll " + e.getMessage());
            throw e;
        }
    }
-
    
    /**
     * Retrieves List of {@link AuditLogEntry} . Maximum elements is 100. Use modifiedTimeStart for pagination.
@@ -124,20 +124,18 @@ public class AuditLogModuleStorage extends BaseModuleStorage {
     * 
     * @return List<AuditLogEntryOutputDto> with a maximum of 100 elements in the list. 
     */
-  public List<AuditLogEntryOutputDto> getAuditLogListByType(Long modifiedTimeStart, ObjectTypeEnumDto type) throws IllegalArgumentException, SQLException {
+  public List<AuditLogEntryOutputDto> getAuditLogOlderThanModifiedTimeListByType(Long modifiedTimeStart, ObjectTypeEnumDto type) throws IllegalArgumentException, SQLException {
       if (type== null) {
           throw new InvalidArgumentServiceException("ObjectTypeEnum must not be null");
       }
       
-      log.debug("AuditlogList called for modifiedTimeStart='{}', type='{}'",modifiedTimeStart ,type);
+      log.debug("getAuditLogOlderThanModifiedTimeListByType called for modifiedTimeStart='{}', type='{}'",modifiedTimeStart ,type);
       
       ArrayList<AuditLogEntryOutputDto> auditLogList = new ArrayList<AuditLogEntryOutputDto>();              
       
-      try (PreparedStatement stmt = connection.prepareStatement(selectAuditLogOlderThanModifiedTimeByTypeQuery);) {
-          stmt.setLong(1, modifiedTimeStart);
-          if(type != null) {
-            stmt.setString(2, type.getValue());
-          }           
+      try (PreparedStatement stmt = connection.prepareStatement(selectAuditLogOlderThanModifiedTimeByChangeNameQuery);) {
+          stmt.setLong(1, modifiedTimeStart);        
+          stmt.setString(2, type.getValue());                   
           ResultSet rs = stmt.executeQuery();
           while (rs.next()) { // maximum one due to unique/primary key constraint              
                AuditLogEntryOutputDto audit = auditLogEntryOutputDtoMapper.map(rs);
@@ -145,7 +143,7 @@ public class AuditLogModuleStorage extends BaseModuleStorage {
           }       
           return auditLogList;
       } catch (SQLException e) {
-          log.error("SQL Exception in getAuditLogList: " + e.getMessage());
+          log.error("SQL Exception in getAuditLogOlderThanModifiedTimeListByType: " + e.getMessage());
           throw e;
       }
   }

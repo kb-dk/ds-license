@@ -23,7 +23,9 @@ import org.slf4j.LoggerFactory;
 
 import dk.kb.license.config.ServiceConfig;
 import dk.kb.license.model.v1.AuditLogEntryOutputDto;
+import dk.kb.license.model.v1.ChangeTypeEnumDto;
 import dk.kb.license.model.v1.DeleteReasonDto;
+import dk.kb.license.model.v1.ObjectTypeEnumDto;
 import dk.kb.license.storage.AuditLogModuleStorageForUnitTest;
 import dk.kb.license.storage.BaseModuleStorage;
 import dk.kb.license.storage.UnitTestUtil;
@@ -88,15 +90,18 @@ public class AuditLogModuleFacadeTest extends UnitTestUtil {
             deleteReasonDto.setChangeComment(changeComment);
 
             long presentationTypeId = LicenseModuleFacade.persistLicensePresentationType(key, value, valueEnglish, mockedSession);
-            
-            ArrayList<AuditLogEntryOutputDto> auditLogAll = storage.getAllAudit();
-
-            // Only valid RestrictedIdInputDto objects is in the audit log
+            long after=System.currentTimeMillis()+1;
+            //No type defined, get all.
+            List<AuditLogEntryOutputDto> auditLogAll= AuditLogModuleFacade.getAuditLogOlderThanModifiedTime(after,null);            
             assertEquals(1, auditLogAll.size());
-        }
+            
+            //The correct type just added
+            List<AuditLogEntryOutputDto> auditPresentationType= AuditLogModuleFacade.getAuditLogOlderThanModifiedTime(after,ObjectTypeEnumDto.PRESENTATION_TYPE);            
+            assertEquals(1, auditPresentationType.size()); //Found
 
-    }
-    
-    
-    
+            //Not the type added
+            List<AuditLogEntryOutputDto> dsIDType= AuditLogModuleFacade.getAuditLogOlderThanModifiedTime(after,ObjectTypeEnumDto.DS_ID);           
+            assertEquals(0, dsIDType.size()); //Not found            
+        }
+    }    
 }

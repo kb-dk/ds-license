@@ -1782,7 +1782,7 @@ components:
           type: string
         textAfter:
           type: string
-  
+
     RestrictedIdInput:
       type: object
       required:

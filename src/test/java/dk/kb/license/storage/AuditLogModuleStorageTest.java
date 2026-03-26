@@ -124,15 +124,15 @@ public class AuditLogModuleStorageTest extends UnitTestUtil {
             
             long time=System.currentTimeMillis()+1L; //Need to add 1 to time since often it will happen in same millis in test and method is strict less than            
             //list, all.  
-            List<AuditLogEntryOutputDto> auditLogList = storage.getAuditLogListAll(time);
+            List<AuditLogEntryOutputDto> auditLogList = storage.getAuditLogOlderThanModifiedTimeListAll(time);
             assertEquals(1,auditLogList.size());
-
+            
             //list DR_PRODUCTION_ID 
-            auditLogList = storage.getAuditLogListByType(time,ObjectTypeEnumDto.DR_PRODUCTION_ID);
+            auditLogList = storage.getAuditLogOlderThanModifiedTimeListByType(time,ObjectTypeEnumDto.DR_PRODUCTION_ID);
             assertEquals(1,auditLogList.size());
 
             //list LICENSE (no rows)
-            auditLogList = storage.getAuditLogListByType(time,ObjectTypeEnumDto.LICENSE);
+            auditLogList = storage.getAuditLogOlderThanModifiedTimeListByType(time,ObjectTypeEnumDto.LICENSE);
             assertEquals(0,auditLogList.size());
         }
     }   
