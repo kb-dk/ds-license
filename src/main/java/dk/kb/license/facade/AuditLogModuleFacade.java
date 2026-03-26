@@ -19,7 +19,7 @@ public class AuditLogModuleFacade {
      * @return the AuditLogEntry with the given id
      */
     public static AuditLogEntryOutputDto getAuditEntryById(Long auditLogId) {
-        return BaseModuleStorage.performStorageAction("getAuditEntries()", AuditLogModuleStorage.class, storage -> {
+        return BaseModuleStorage.performStorageAction("getAuditEntryById()", AuditLogModuleStorage.class, storage -> {
             return ((AuditLogModuleStorage) storage).getAuditLogById(auditLogId);
         });
     }
@@ -34,7 +34,7 @@ public class AuditLogModuleFacade {
      * @return List<AuditLogEntryOutputDto> with a maximum of 100 elements in the list. 
      */
     public static List<AuditLogEntryOutputDto> getAuditLogOlderThanModifiedTime(Long modifiedTimeStart, ObjectTypeEnumDto changeName) {                                  
-        return BaseModuleStorage.performStorageAction("getAuditLogList()", AuditLogModuleStorage.class, storage -> {
+        return BaseModuleStorage.performStorageAction("getAuditLogOlderThanModifiedTime()", AuditLogModuleStorage.class, storage -> {
          if (changeName == null) {
              return ((AuditLogModuleStorage) storage).getAuditLogOlderThanModifiedTimeListAll(modifiedTimeStart);     
          }

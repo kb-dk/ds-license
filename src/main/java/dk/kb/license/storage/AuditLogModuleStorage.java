@@ -97,7 +97,7 @@ public class AuditLogModuleStorage extends BaseModuleStorage {
    public List<AuditLogEntryOutputDto> getAuditLogOlderThanModifiedTimeListAll(Long modifiedTimeStart) throws IllegalArgumentException, SQLException {
        log.debug("getAuditLogOlderThanModifiedTimeListAll called for modifiedTimeStart='{}', type='{}'", modifiedTimeStart);
        
-       ArrayList<AuditLogEntryOutputDto> auditLogList = new ArrayList<AuditLogEntryOutputDto>();
+       List<AuditLogEntryOutputDto> auditLogList = new ArrayList<AuditLogEntryOutputDto>();
         
         //two different versions. Last also has type parameter.        
        
@@ -124,18 +124,18 @@ public class AuditLogModuleStorage extends BaseModuleStorage {
     * 
     * @return List<AuditLogEntryOutputDto> with a maximum of 100 elements in the list. 
     */
-  public List<AuditLogEntryOutputDto> getAuditLogOlderThanModifiedTimeListByType(Long modifiedTimeStart, ObjectTypeEnumDto type) throws IllegalArgumentException, SQLException {
-      if (type== null) {
+  public List<AuditLogEntryOutputDto> getAuditLogOlderThanModifiedTimeListByType(Long modifiedTimeStart, ObjectTypeEnumDto changeName) throws IllegalArgumentException, SQLException {
+      if (changeName == null) {
           throw new InvalidArgumentServiceException("ObjectTypeEnum must not be null");
       }
       
-      log.debug("getAuditLogOlderThanModifiedTimeListByType called for modifiedTimeStart='{}', type='{}'",modifiedTimeStart ,type);
+      log.debug("getAuditLogOlderThanModifiedTimeListByType called for modifiedTimeStart='{}', type='{}'",modifiedTimeStart ,changeName);
       
       ArrayList<AuditLogEntryOutputDto> auditLogList = new ArrayList<AuditLogEntryOutputDto>();              
       
       try (PreparedStatement stmt = connection.prepareStatement(selectAuditLogOlderThanModifiedTimeByChangeNameQuery);) {
           stmt.setLong(1, modifiedTimeStart);        
-          stmt.setString(2, type.getValue());                   
+          stmt.setString(2,changeName.getValue());                   
           ResultSet rs = stmt.executeQuery();
           while (rs.next()) { // maximum one due to unique/primary key constraint              
                AuditLogEntryOutputDto audit = auditLogEntryOutputDtoMapper.map(rs);
